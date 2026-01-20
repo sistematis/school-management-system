@@ -110,7 +110,7 @@ const getStatusColor = (status: LeaveStatus) => {
   }
 };
 
-const getLeaveTypeColor = (type: LeaveType) => {
+const getLeaveTypeColor = (type: LeaveType | string) => {
   switch (type) {
     case "Sick Leave":
       return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
