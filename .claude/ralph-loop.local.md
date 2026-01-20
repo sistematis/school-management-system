@@ -1,14 +1,12 @@
 ---
 active: true
 iteration: 1
-max_iterations: 50
+max_iterations: 30
 completion_promise: "COMPLETE"
-started_at: "2026-01-20T19:17:22Z"
+started_at: "2026-01-20T19:36:03Z"
 ---
 
-Implement these designs from Figma for Academic - Students.
-
-@https://www.figma.com/design/Z0Uh7CsGPZS5fvyVOahlYU/School-Management-System-Design?node-id=1-3681&m=dev
+Implement setiap section pada page mendukung tampilan component lainnya seperti sidebar dll sama seperti pada src\app\(main)\dashboard\default\page.tsx.
 
 Success criteria:
 - All requirements implemented
