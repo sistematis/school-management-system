@@ -118,6 +118,21 @@ type BehaviorStatus = "excellent" | "good" | "needs-improvement";
 type AnnouncementType = "general" | "event" | "fee" | "emergency";
 type AnnouncementPriority = "low" | "normal" | "high" | "urgent";
 
+const formatDate = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatTime = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
 const getGradeTrendColor = (trend: GradeTrend) => {
   switch (trend) {
     case "up":
@@ -363,8 +378,7 @@ export default function ParentPortalPage() {
                         <Badge variant="outline">{message.subject}</Badge>
                       </div>
                       <p className="text-muted-foreground text-xs">
-                        {new Date(message.timestamp).toLocaleDateString()} at{" "}
-                        {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {formatDate(message.timestamp)} at {formatTime(message.timestamp)}
                       </p>
                     </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
