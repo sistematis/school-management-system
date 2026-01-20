@@ -317,9 +317,62 @@ System-wide notification management and alerts.
 - Search by title, message, or sender
 - Filter by type, priority, and status
 
+## Resources Module Details
+
+### Asset Management (`/resources/asset-management`)
+School property and equipment inventory tracking system.
+
+**Features:**
+- Asset cards with unique IDs and detailed information
+- Category classification (Electronics, Furniture, Equipment, Vehicles)
+- Condition tracking (Excellent, Good, Fair, Poor, Needs Repair, Retired)
+- Location and assignment tracking
+- Purchase date and current value display
+- Warranty information with expiry date alerts
+- Statistics dashboard (Total Assets, Electronics, Needs Repair, Total Value)
+- Search by asset name, ID, or location
+- Filter by category and condition
+- Quick actions (Audit Assets, Schedule Maintenance, Report Issue)
+
+### Facilities (`/resources/facilities`)
+Room booking and facility maintenance management system.
+
+**Features:**
+- Room cards with type icons and capacity information
+- Room status tracking (Available, Occupied, Maintenance, Closed, Booked)
+- Location and equipment details
+- Maintenance scheduling with last/next due dates
+- Room type filtering (Classroom, Laboratory, Library, Auditorium, Gymnasium, Cafeteria, Office)
+- Recent bookings list with approval workflow
+- Booking information (purpose, requester, attendees, time range)
+- Approve/Reject actions for pending bookings
+- Statistics dashboard (Total Rooms, Available, In Use, Maintenance)
+- Search by room name, ID, or location
+- Filter by type and status
+- Quick actions (View Schedule, Maintenance, Report Issue)
+
+### Library (`/resources/library`)
+Book catalog and borrowing management system.
+
+**Features:**
+- Book catalog with detailed information
+- Book category classification (Fiction, Non-Fiction, Reference, Textbook, Periodical)
+- Availability tracking (Available, Borrowed, Overdue, Reserved, Lost, Damaged)
+- Location and ISBN tracking
+- Author and publisher information
+- Page count and language details
+- Active borrow records with student information
+- Fine calculation and payment tracking
+- Digital resources section (E-books, Audiobooks, Videos, Databases)
+- Access type badges (Free, Subscription, Paid)
+- Statistics dashboard (Total Books, Available, Borrowed, Overdue)
+- Search by title, author, or ISBN
+- Filter by category and status
+- Quick actions (Process Returns, Manage Reservations, Overdue Alerts)
+
 ## Testing Coverage
 
-The application has comprehensive test coverage across Academic, Finance, Human Resources, and Communication modules:
+The application has comprehensive test coverage across Academic, Finance, Human Resources, Communication, and Resources modules:
 
 ### Academic Module
 
@@ -360,6 +413,15 @@ The application has comprehensive test coverage across Academic, Finance, Human 
 | Student Portal | 87.93% | 70.45% | 93.33% | 90.74% |
 | **Overall** | **83.91%** | **66.01% | **86.62%** | **86.91%** |
 
+### Resources Module
+
+| Page | Statements | Branches | Functions | Lines |
+|------|-----------|----------|-----------|-------|
+| Asset Management | 92.59% | 80% | 100% | 92.59% |
+| Facilities | 89.83% | 76.92% | 90.9% | 89.83% |
+| Library | 87.75% | 72.22% | 90% | 88.23% |
+| **Overall** | **90.06%** | **76.38%** | **93.63%** | **90.22%** |
+
 ### Overall Project Coverage
 
 | Module | Statements | Branches | Functions | Lines |
@@ -368,13 +430,14 @@ The application has comprehensive test coverage across Academic, Finance, Human 
 | Finance | 93.9% | 81.98% | 92.53% | 94.24% |
 | Human Resources | 90.58% | 66.24% | 86.77% | 90.33% |
 | Communication | 83.91% | 66.01% | 86.62% | 86.91% |
-| **Overall** | **89.76%** | **71.06% | **90%** | **89.76%** |
+| Resources | 90.06% | 76.38% | 93.63% | 90.22% |
+| **Overall** | **90.18%** | **74.35%** | **90.5%** | **91.18%** |
 
 **Test Configuration:**
 - Testing Framework: Vitest 4.0.17
-- Total Tests: 190 tests passing
+- Total Tests: 240 tests passing
 - Coverage Provider: v8
-- Overall Coverage: 89.76% statements, 71.06% branches, 90% functions, 89.76% lines
+- Overall Coverage: 90.18% statements, 74.35% branches, 90.5% functions, 91.18% lines
 
 ### Formatting and Linting
 

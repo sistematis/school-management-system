@@ -103,7 +103,7 @@ export const sidebarItems: NavGroup[] = [
         url: "#",
         icon: Package,
         subItems: [
-          { title: "Asset Management", url: "/resources/assets", icon: Package },
+          { title: "Asset Management", url: "/resources/asset-management", icon: Package },
           { title: "Library", url: "/resources/library", icon: Library },
           { title: "Facilities", url: "/resources/facilities", icon: Building },
         ],
