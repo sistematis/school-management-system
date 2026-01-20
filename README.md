@@ -225,9 +225,55 @@ Financial reporting and analytics dashboard.
 - Search and filter by report name or ID
 - Date range filtering
 
+## Human Resources Module Details
+
+### Staff Directory (`/hr/staff-directory`)
+Comprehensive staff information management system.
+
+**Features:**
+- Staff profile cards with avatars displaying initials
+- Department classification (Teaching, Administration, Support Staff)
+- Employment status tracking (Active, On Leave, Inactive)
+- Position and contact information management
+- Join date tracking
+- Statistics dashboard (Total Staff, Active, On Leave, Teaching Staff, Non-Teaching)
+- Search by name, ID, department, or email
+- Export capabilities
+
+### Leave Management (`/hr/leave-management`)
+Staff leave request and balance management system.
+
+**Features:**
+- Leave request tracking with unique request IDs
+- Multiple leave types (Sick Leave, Annual Leave, Personal, Emergency)
+- Leave status workflow (Pending, Approved, Rejected, Cancelled)
+- Date range and duration calculation
+- Approve/Reject actions for pending requests
+- Staff member information with avatars
+- Reason tracking for each request
+- Statistics dashboard (Pending Requests, Approved This Month, On Leave Today, Total Leave Days)
+- Search by staff name or request ID
+- Filter by leave type and status
+
+### Performance (`/hr/performance`)
+Staff performance evaluation and review tracking system.
+
+**Features:**
+- Performance review records with unique IDs
+- Star rating display (1-5 stars with half-star support)
+- Color-coded ratings (4.5+ green, 4.0-4.4 blue, 3.5-3.9 yellow, <3.5 red)
+- Review status tracking (Completed, In Progress, Pending, Draft)
+- Review period filtering by quarter
+- Department and staff member assignment
+- Reviewer assignment and date tracking
+- Goals and objectives management per review
+- Statistics dashboard (Reviews This Quarter, Average Rating, Top Performers, Improvement Needed)
+- Search by staff name or review ID
+- Filter by rating, status, and quarter
+
 ## Testing Coverage
 
-The application has comprehensive test coverage across Academic and Finance modules:
+The application has comprehensive test coverage across Academic, Finance, and Human Resources modules:
 
 ### Academic Module
 
@@ -250,10 +296,29 @@ The application has comprehensive test coverage across Academic and Finance modu
 | Invoices | 90% | 73.68% | 88.88% | 90% |
 | **Overall** | **93.9%** | **81.98%** | **92.53%** | **94.24%** |
 
+### Human Resources Module
+
+| Page | Statements | Branches | Functions | Lines |
+|------|-----------|----------|-----------|-------|
+| Leave Management | 92.59% | 78.94% | 85.71% | 92.59% |
+| Performance | 91.66% | 60.97% | 88.88% | 90.9% |
+| Staff Directory | 87.5% | 58.82% | 85.71% | 87.5% |
+| **Overall** | **90.58%** | **66.24%** | **86.77%** | **90.33%** |
+
+### Overall Project Coverage
+
+| Module | Statements | Branches | Functions | Lines |
+|--------|-----------|----------|-----------|-------|
+| Academic | 92.42% | 84.61% | 96.55% | 93.33% |
+| Finance | 93.9% | 81.98% | 92.53% | 94.24% |
+| Human Resources | 90.58% | 66.24% | 86.77% | 90.33% |
+| **Overall** | **92.9%** | **75% | **91.11%** | **93%** |
+
 **Test Configuration:**
 - Testing Framework: Vitest 4.0.17
-- Total Tests: 105 tests passing
+- Total Tests: 138 tests passing
 - Coverage Provider: v8
+- Overall Coverage: 92.9% statements, 75% branches, 91.11% functions, 93% lines
 
 ### Formatting and Linting
 
