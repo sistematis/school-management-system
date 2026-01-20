@@ -1,4 +1,4 @@
-# Next.js Admin Template with TypeScript & Shadcn UI
+# School Management System
 
 ## Features
 
@@ -7,11 +7,16 @@
 - Customizable theme presets (light/dark modes with color schemes like Tangerine, Brutalist, and more)
 - Flexible layouts (collapsible sidebar, variable content widths)
 - Authentication flows and screens
-- Prebuilt dashboards (Default, CRM, Finance) with more coming soon
-- Role-Based Access Control (RBAC) with config-driven UI and multi-tenant support _(planned)_
+- **School Management Modules**:
+  - Academic (Students, Curriculum, Timetable, Attendance, Grades & Exams)
+  - Finance (Invoices, Payments, Payroll, Reports)
+  - Human Resources (Staff Directory, Leave Management, Performance)
+  - Communication (Parent Portal, Student Portal, Notifications)
+  - Resources (Asset Management, Library, Facilities)
+- Dashboard with stats, activity feed, events, and quick actions
 
 > [!NOTE]
-> The default dashboard uses the **shadcn neutral** theme.  
+> The default dashboard uses the **shadcn neutral** theme.
 > It also includes additional color presets inspired by [Tweakcn](https://tweakcn.com):
 >
 > - Tangerine
@@ -29,28 +34,93 @@
 - **Tables & Data Handling**: TanStack Table
 - **Tooling & DX**: Biome, Husky
 
-## Screens
+## Project Structure
 
-### Available
+```
+src/
+├── app/(main)/
+│   ├── dashboard/           # Main dashboard page
+│   ├── academic/            # Academic management modules
+│   │   ├── students/
+│   │   ├── curriculum/
+│   │   ├── timetable/
+│   │   ├── attendance/
+│   │   └── grades/
+│   ├── finance/             # Finance management modules
+│   │   ├── invoices/
+│   │   ├── payments/
+│   │   ├── payroll/
+│   │   └── reports/
+│   ├── hr/                  # Human Resources modules
+│   │   ├── staff-directory/
+│   │   ├── leave-management/
+│   │   └── performance/
+│   ├── communication/       # Communication modules
+│   │   ├── parent-portal/
+│   │   ├── student-portal/
+│   │   └── notifications/
+│   └── resources/           # Resource management modules
+│       ├── assets/
+│       ├── library/
+│       └── facilities/
+├── components/
+│   ├── dashboard/           # Dashboard-specific components
+│   │   ├── stat-card.tsx
+│   │   ├── activity-feed.tsx
+│   │   ├── events-card.tsx
+│   │   └── quick-actions.tsx
+│   ├── layout/              # Shared layout components
+│   │   └── dashboard-shell.tsx
+│   └── ui/                  # Shadcn UI components
+└── navigation/
+    └── sidebar/             # Sidebar navigation configuration
+        └── sidebar-items.ts
+```
 
-- Default Dashboard
-- CRM Dashboard
-- Finance Dashboard
-- Authentication (4 screens)
+## Dashboard Components
 
-### Coming Soon
+### StatCard
+Displays key metrics with trend indicators and icons.
 
-- Analytics Dashboard
-- eCommerce Dashboard
-- Academy Dashboard
-- Logistics Dashboard
-- Email Page
-- Chat Page
-- Calendar Page
-- Kanban Board
-- Invoice Page
-- Users Management
-- Roles Management
+### ActivityFeed
+Shows recent activity items with timestamps.
+
+### EventsCard
+Lists upcoming events with dates and times.
+
+### QuickActions
+Provides quick access buttons for common actions.
+
+## Navigation
+
+The sidebar navigation is organized into modules:
+- **Dashboard** - Main overview page
+- **Academic** - Student and curriculum management
+- **Finance** - Financial management and reporting
+- **Human Resources** - Staff and HR management
+- **Communication** - Portal and notification management
+- **Resources** - Asset and facility management
+
+## Development
+
+### Available Scripts
+
+```bash
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run linter
+npm run lint
+
+# Format code
+npm run format
+
+# Run all checks
+npm run check
+```
 
 ### Formatting and Linting
 
@@ -64,8 +134,8 @@ npx @biomejs/biome check --write
 
 ---
 
-> [!IMPORTANT]  
-> This project is updated frequently. If you’re working from a fork or an older clone, pull the latest changes before syncing. Some updates may include breaking changes.
+> [!IMPORTANT]
+> This project is updated frequently. If you're working from a fork or an older clone, pull the latest changes before syncing. Some updates may include breaking changes.
 
 ---
 
