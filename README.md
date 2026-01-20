@@ -271,9 +271,55 @@ Staff performance evaluation and review tracking system.
 - Search by staff name or review ID
 - Filter by rating, status, and quarter
 
+## Communication Module Details
+
+### Parent Portal (`/communication/parent-portal`)
+Parent communication and child academic progress monitoring system.
+
+**Features:**
+- Student information cards with avatars and initials
+- Attendance percentage tracking
+- Academic performance with average grades and trend indicators
+- Behavior status tracking (Excellent, Good, Needs Improvement)
+- Outstanding fees display with payment links
+- Parent-teacher messaging with read/unread indicators
+- School announcements with type and priority badges
+- Statistics dashboard (Total Students, Unread Messages, Upcoming Meetings, Outstanding Fees)
+- Search by student name, ID, or announcement
+- Filter by student class, message status, and announcement urgency
+
+### Student Portal (`/communication/student-portal`)
+Student academic dashboard with class management tools.
+
+**Features:**
+- Today's class schedule with teacher, room, and time information
+- Assignment tracking with status (Not Submitted, Submitted, Graded, Late)
+- Grade display with percentage breakdown and letter grades
+- Academic performance table with trend indicators
+- Achievement badges with emoji icons and categories
+- GPA and attendance statistics
+- Search by class subject or assignment name
+- Filter by assignment status and achievement category
+- Subject-based navigation and resource links
+
+### Notifications (`/communication/notifications`)
+System-wide notification management and alerts.
+
+**Features:**
+- Notification list with priority-based sorting (Urgent, High, Normal, Low)
+- Notification type categories (System, Academic, Behavior, Event, Fee, Emergency)
+- Read/unread status tracking with visual indicators
+- Relative time display (e.g., "2h ago", "Yesterday", "3d ago")
+- Action buttons for relevant notifications (Pay Now, Add to Calendar, etc.)
+- Quick actions for bulk management (Mark Read, Archive, Delete)
+- Notification preferences with enable/disable toggles
+- Statistics dashboard (Unread, High Priority, Archived, Total)
+- Search by title, message, or sender
+- Filter by type, priority, and status
+
 ## Testing Coverage
 
-The application has comprehensive test coverage across Academic, Finance, and Human Resources modules:
+The application has comprehensive test coverage across Academic, Finance, Human Resources, and Communication modules:
 
 ### Academic Module
 
@@ -305,6 +351,15 @@ The application has comprehensive test coverage across Academic, Finance, and Hu
 | Staff Directory | 87.5% | 58.82% | 85.71% | 87.5% |
 | **Overall** | **90.58%** | **66.24%** | **86.77%** | **90.33%** |
 
+### Communication Module
+
+| Page | Statements | Branches | Functions | Lines |
+|------|-----------|----------|-----------|-------|
+| Notifications | 81.81% | 68.57% | 81.81% | 88% |
+| Parent Portal | 82% | 59.57% | 85.71% | 82% |
+| Student Portal | 87.93% | 70.45% | 93.33% | 90.74% |
+| **Overall** | **83.91%** | **66.01% | **86.62%** | **86.91%** |
+
 ### Overall Project Coverage
 
 | Module | Statements | Branches | Functions | Lines |
@@ -312,13 +367,14 @@ The application has comprehensive test coverage across Academic, Finance, and Hu
 | Academic | 92.42% | 84.61% | 96.55% | 93.33% |
 | Finance | 93.9% | 81.98% | 92.53% | 94.24% |
 | Human Resources | 90.58% | 66.24% | 86.77% | 90.33% |
-| **Overall** | **92.9%** | **75% | **91.11%** | **93%** |
+| Communication | 83.91% | 66.01% | 86.62% | 86.91% |
+| **Overall** | **89.76%** | **71.06% | **90%** | **89.76%** |
 
 **Test Configuration:**
 - Testing Framework: Vitest 4.0.17
-- Total Tests: 138 tests passing
+- Total Tests: 190 tests passing
 - Coverage Provider: v8
-- Overall Coverage: 92.9% statements, 75% branches, 91.11% functions, 93% lines
+- Overall Coverage: 89.76% statements, 71.06% branches, 90% functions, 89.76% lines
 
 ### Formatting and Linting
 
