@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -44,20 +45,145 @@ vi.mock("@/components/ui/select", () => ({
   SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
+// Mock the iDempiere hooks
+vi.mock("@/lib/hooks/use-idempiere-data", () => ({
+  useIdempiereAuthenticated: () => true,
+  useIdempiereAuthActions: () => ({
+    login: vi.fn(),
+    logout: vi.fn(),
+  }),
+  useStudents: () => ({
+    data: {
+      records: [
+        {
+          id: "10A-001",
+          firstName: "John",
+          lastName: "Smith",
+          initials: "JS",
+          email: "john.smith@student.edu",
+          phone: "+62 812 3456 7890",
+          grade: "Grade 10 - Section A",
+          parentName: "Robert Smith",
+          dateOfBirth: "2010-05-15",
+          status: "active",
+        },
+        {
+          id: "09A-015",
+          firstName: "Sarah",
+          lastName: "Johnson",
+          initials: "SJ",
+          email: "sarah.j@student.edu",
+          phone: "+62 812 3456 7891",
+          grade: "Grade 9 - Section A",
+          parentName: "Michael Johnson",
+          dateOfBirth: "2011-08-22",
+          status: "active",
+        },
+        {
+          id: "11B-023",
+          firstName: "Michael",
+          lastName: "Chen",
+          initials: "MC",
+          email: "michael.chen@student.edu",
+          phone: "+62 812 3456 7892",
+          grade: "Grade 11 - Section B",
+          parentName: "David Chen",
+          dateOfBirth: "2009-03-10",
+          status: "active",
+        },
+        {
+          id: "10A-004",
+          firstName: "Emily",
+          lastName: "Davis",
+          initials: "ED",
+          email: "emily.davis@student.edu",
+          phone: "+62 812 3456 7893",
+          grade: "Grade 10 - Section A",
+          parentName: "James Davis",
+          dateOfBirth: "2010-11-28",
+          status: "active",
+        },
+        {
+          id: "12A-005",
+          firstName: "David",
+          lastName: "Wilson",
+          initials: "DW",
+          email: "david.wilson@student.edu",
+          phone: "+62 812 3456 7894",
+          grade: "Grade 12 - Section A",
+          parentName: "Thomas Wilson",
+          dateOfBirth: "2008-07-05",
+          status: "active",
+        },
+      ],
+      page: 1,
+      pageSize: 9,
+      totalPages: 1,
+      totalRecords: 5,
+    },
+    isLoading: false,
+  }),
+  useSearchStudents: () => ({
+    data: {
+      records: [],
+      page: 1,
+      pageSize: 9,
+      totalPages: 1,
+      totalRecords: 0,
+    },
+    isLoading: false,
+  }),
+  useStudentStats: () => ({
+    data: {
+      total: 5,
+      active: 5,
+    },
+    isLoading: false,
+  }),
+  useDeleteStudent: () => ({
+    mutateAsync: vi.fn(),
+  }),
+}));
+
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+}
+
 describe("StudentsPage", () => {
   it("renders the page header with title and description", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     expect(screen.getByText("Student Information System")).toBeInTheDocument();
-    expect(screen.getByText("Manage student profiles and enrollment")).toBeInTheDocument();
+    expect(screen.getByText(/Manage student profiles and enrollment/)).toBeInTheDocument();
   });
 
   it("renders the Add Student button", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     expect(screen.getByText("Add Student")).toBeInTheDocument();
   });
 
   it("renders all stat cards", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     expect(screen.getByText("Total Students")).toBeInTheDocument();
     // "5" appears multiple times, use getAllByText
     const fives = screen.getAllByText("5");
@@ -75,18 +201,33 @@ describe("StudentsPage", () => {
   });
 
   it("renders search input with placeholder", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     expect(screen.getByPlaceholderText("Search by name, roll number, or email...")).toBeInTheDocument();
   });
 
   it("renders filter buttons", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     expect(screen.getByText("Filters")).toBeInTheDocument();
     expect(screen.getByText("Export")).toBeInTheDocument();
   });
 
   it("renders all student cards", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
 
     // Check for student names
     expect(screen.getByText("John Smith")).toBeInTheDocument();
@@ -104,7 +245,12 @@ describe("StudentsPage", () => {
   });
 
   it("renders student card with avatar initials", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     const avatars = screen.getAllByTestId("avatar");
     expect(avatars.length).toBe(5);
     expect(screen.getByText("JS")).toBeInTheDocument(); // John Smith initials
@@ -112,13 +258,23 @@ describe("StudentsPage", () => {
   });
 
   it("renders student details including email and phone", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     expect(screen.getByText("john.smith@student.edu")).toBeInTheDocument();
     expect(screen.getByText("+62 812 3456 7890")).toBeInTheDocument();
   });
 
   it("renders Edit and Delete buttons for each student", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     const editButtons = screen.getAllByText("Edit");
     const deleteButtons = screen.getAllByText("Delete");
 
@@ -127,7 +283,12 @@ describe("StudentsPage", () => {
   });
 
   it("displays grade information for students", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     // These grade values appear in stat cards and student details
     const grade10SectionA = screen.getAllByText("Grade 10 - Section A");
     expect(grade10SectionA.length).toBeGreaterThan(0);
@@ -137,14 +298,24 @@ describe("StudentsPage", () => {
   });
 
   it("displays parent information", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     expect(screen.getByText("Robert Smith")).toBeInTheDocument();
     expect(screen.getByText("Michael Johnson")).toBeInTheDocument();
     expect(screen.getByText("David Chen")).toBeInTheDocument();
   });
 
   it("displays date of birth", () => {
-    render(<StudentsPage />);
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StudentsPage />
+      </QueryClientProvider>,
+    );
     expect(screen.getByText("DOB: 2010-05-15")).toBeInTheDocument();
     expect(screen.getByText("DOB: 2011-08-22")).toBeInTheDocument();
   });

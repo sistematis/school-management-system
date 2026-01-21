@@ -31,8 +31,10 @@
 - **UI Components**: Shadcn UI
 - **Validation**: Zod
 - **Forms & State Management**: React Hook Form, Zustand
+- **Data Fetching**: TanStack Query (React Query)
 - **Tables & Data Handling**: TanStack Table
-- **Tooling & DX**: Biome, Husky
+- **ERP Integration**: iDempiere REST API
+- **Tooling & DX**: Biome, Husky, Vitest
 
 ## Project Structure
 
@@ -72,6 +74,19 @@ src/
 │   ├── layout/              # Shared layout components
 │   │   └── dashboard-shell.tsx
 │   └── ui/                  # Shadcn UI components
+├── lib/
+│   ├── api/
+│   │   └── idempiere/       # iDempiere REST API integration
+│   │       ├── client.ts    # HTTP client with auth
+│   │       ├── config.ts    # API configuration
+│   │       ├── types.ts     # TypeScript types
+│   │       ├── transformers.ts # Data mapping
+│   │       └── services/    # Per-entity services
+│   ├── hooks/               # Custom React hooks
+│   │   └── use-idempiere-data.ts
+│   ├── stores/              # Zustand stores
+│   │   └── idempiere-auth.store.ts
+│   └── utils.ts
 └── navigation/
     └── sidebar/             # Sidebar navigation configuration
         └── sidebar-items.ts
@@ -369,6 +384,115 @@ Book catalog and borrowing management system.
 - Search by title, author, or ISBN
 - Filter by category and status
 - Quick actions (Process Returns, Manage Reservations, Overdue Alerts)
+
+## iDempiere ERP Integration
+
+The School Management System now integrates with **iDempiere ERP** via REST API for enterprise-grade data management.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Next.js Frontend                         │
+│  - UI Components, Forms, Tables, Dashboard                 │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│              API Integration Layer                          │
+│  - lib/api/idempiere/client.ts      # HTTP client         │
+│  - lib/api/idempiere/services/      # Entity services     │
+│  - lib/hooks/use-idempiere-data.ts   # React Query hooks   │
+│  - lib/stores/idempiere-auth.store.ts # Auth state        │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  iDempiere REST API                         │
+│  - C_BPartner (Students/Staff)                             │
+│  - C_Invoice (Billing)                                     │
+│  - C_Payment (Transactions)                                │
+│  - A_Asset (Inventory)                                     │
+│  - M_Product (Library)                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Configuration
+
+Create a `.env.local` file with your iDempiere credentials:
+
+```env
+# iDempiere REST API Configuration
+NEXT_PUBLIC_IDEMPIERE_API_URL=https://backend-school-management-system.sistematis.co.id/api/v1
+NEXT_PUBLIC_IDEMPIERE_CLIENT_ID=1000000
+NEXT_PUBLIC_IDEMPIERE_ROLE_ID=1000000
+NEXT_PUBLIC_IDEMPIERE_ORG_ID=1000000
+NEXT_PUBLIC_IDEMPIERE_WAREHOUSE_ID=1000000
+NEXT_PUBLIC_IDEMPIERE_LANGUAGE=en_US
+```
+
+**Sistematis Backend Configuration**:
+- Backend: `backend-school-management-system.sistematis.co.id`
+- Protocol: `https`
+- Test Credentials: `sistematis` / `s1stemat1s`
+
+### Features
+
+- **Authentication**: Token-based auth with automatic refresh
+- **Pagination**: Handle large datasets (15,000+ records) efficiently
+- **Caching**: React Query caching with configurable stale time
+- **Error Handling**: Comprehensive error handling and retry logic
+- **Type Safety**: Full TypeScript support for all iDempiere entities
+
+### Entity Mapping
+
+| School Management | iDempiere Table | REST Endpoint |
+|-------------------|-----------------|---------------|
+| Students | C_BPartner | /models/C_BPartner |
+| Staff | C_BPartner | /models/C_BPartner |
+| Invoices | C_Invoice | /models/C_Invoice |
+| Payments | C_Payment | /models/C_Payment |
+| Assets | A_Asset | /models/A_Asset |
+| Library Books | M_Product | /models/M_Product |
+
+### Usage Example
+
+```typescript
+import { useStudents, useStudentStats } from "@/lib/hooks/use-idempiere-data";
+
+function StudentsPage() {
+  // Fetch paginated students
+  const { data: studentsData, isLoading, error } = useStudents({
+    page: 1,
+    pageSize: 100,
+  });
+
+  // Fetch student statistics
+  const { data: stats } = useStudentStats();
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <p>Total Students: {stats?.total}</p>
+      {studentsData?.records.map((student) => (
+        <StudentCard key={student.id} student={student} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Authentication Flow
+
+1. **Login**: POST `/api/v1/auth/tokens` with credentials
+2. **Get Options**: Fetch available roles, organizations, warehouses
+3. **Finalize**: PUT `/api/v1/auth/tokens` with selected options
+4. **Use Token**: Include `Authorization: Bearer {token}` header
+5. **Auto Refresh**: Token refreshes automatically on 401 response
+
+Based on: [iDempiere REST API Documentation](https://bxservice.github.io/idempiere-rest-docs/)
 
 ## Testing Coverage
 
