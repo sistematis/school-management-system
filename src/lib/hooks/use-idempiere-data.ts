@@ -4,6 +4,8 @@
  * Custom hooks for fetching data from iDempiere REST API
  */
 
+import { useEffect } from "react";
+
 import { type UseQueryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getBusinessPartnerService } from "../api/idempiere/services/business-partner.service";
@@ -277,9 +279,11 @@ export function useIdempiereAuthenticated() {
   const isAuthenticated = useIdempiereAuth((state) => state.isAuthenticated);
   const checkAuth = useIdempiereAuth((state) => state.checkAuth);
 
-  // Check auth status on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- checkAuth is stable
-  checkAuth();
+  // Check auth status on mount (using useEffect to avoid setState during render)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   return isAuthenticated;
 }

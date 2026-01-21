@@ -2,86 +2,318 @@
  * iDempiere Business Partner Service
  *
  * Handles operations for C_BPartner entity (Students, Staff, Parents)
- * Based on: https://bxservice.github.io/idempiere-rest-docs/docs/api-guides/query-model
+ * Based on: https://bxservice.github.io/idempiere-rest-docs/docs/api-guides/crud-operations/querying-data
+ *
+ * This service extends IdempiereBaseService to provide reusable querying functionality
+ * with full OData-style query support using QueryBuilder.
  */
 
-import { getIdempiereClient } from "../client";
-import { IDEMPIERE_CONFIG } from "../config";
+import type { ExpandClause, FilterCondition, OrderByClause, QueryBuilder, QueryConfig, SortOrder } from "../query";
+import { and, filter, inFilter, methodFilter } from "../query";
 import { transformBPartnersToStudents, transformBPartnerToStudent, transformStudentToBPartner } from "../transformers";
-import type { BusinessPartner, PaginatedResponse, PaginationParams, QueryFilter, Student } from "../types";
+import type { BusinessPartner, PaginatedResponse, PaginationParams, Student } from "../types";
+import { IdempiereBaseService } from "./base.service";
 
 /**
- * Business Partner Service
+ * Business Partner Service with reusable query support
  */
-export class BusinessPartnerService {
-  private client = getIdempiereClient();
+export class BusinessPartnerService extends IdempiereBaseService<BusinessPartner, Student> {
+  readonly endpoint = "/models/C_BPartner";
+
+  // ==========================================================================
+  // Query Methods - Using QueryBuilder for reusable querying
+  // ==========================================================================
 
   /**
-   * Get paginated list of students (Business Partners with specific BP Group)
+   * Query business partners with full QueryBuilder configuration
+   * @param config - Query configuration from QueryBuilder
+   * @returns Paginated response with students
+   *
+   * @example
+   * import { QueryBuilder, filter, and, expand } from '@/lib/api/idempiere/query';
+   *
+   * const query = new QueryBuilder()
+   *   .filter('Name', 'eq', 'John')
+   *   .and('IsActive', 'eq', true)
+   *   .orderBy('Created', 'desc')
+   *   .top(10)
+   *   .expand(expand('C_BP_Group', { select: ['Name'] }));
+   *
+   * // Pass the QueryBuilder instance directly (do not call .build())
+   * const result = await service.queryWithConfig(query);
+   */
+  async queryWithConfig(builder: QueryBuilder): Promise<PaginatedResponse<Student>> {
+    const { buildQuery } = await import("../query");
+    const config = (builder as unknown as { config: QueryConfig }).config;
+    return super.query(config);
+  }
+
+  /**
+   * Query with filter condition
+   * @param filter - Filter condition
    * @param pagination - Page and page size
-   * @param filters - Optional query filters
+   * @returns Paginated response with students
+   *
+   * @example
+   * import { filter, and } from '@/lib/api/idempiere/query';
+   *
+   * const result = await service.queryWithFilter(
+   *   and(
+   *     filter('IsCustomer', 'eq', true),
+   *     filter('IsActive', 'eq', true)
+   *   ),
+   *   { page: 1, pageSize: 20 }
+   * );
+   */
+  async queryWithFilter(
+    filterCondition: FilterCondition,
+    pagination: PaginationParams = {},
+  ): Promise<PaginatedResponse<Student>> {
+    return this.query({ filter: filterCondition, ...this.buildPaginationConfig(pagination) });
+  }
+
+  /**
+   * Query with order by
+   * @param orderBy - Order by clause(s)
+   * @param pagination - Page and page size
+   * @returns Paginated response with students
+   *
+   * @example
+   * import { orderBy } from '@/lib/api/idempiere/query';
+   *
+   * const result = await service.queryWithOrderBy(
+   *   orderBy('Name', 'asc'),
+   *   { page: 1, pageSize: 20 }
+   * );
+   */
+  async queryWithOrderBy(
+    orderBy: OrderByClause | OrderByClause[],
+    pagination: PaginationParams = {},
+  ): Promise<PaginatedResponse<Student>> {
+    return this.query({ orderBy, ...this.buildPaginationConfig(pagination) });
+  }
+
+  /**
+   * Query with expand (related entities)
+   * @param expand - Expand clause(s)
+   * @param pagination - Page and page size
+   * @returns Paginated response with students
+   *
+   * @example
+   * import { expand } from '@/lib/api/idempiere/query';
+   *
+   * const result = await service.queryWithExpand(
+   *   expand('C_BP_Group', { select: ['Name', 'Description'] }),
+   *   { page: 1, pageSize: 20 }
+   * );
+   */
+  async queryWithExpand(
+    expand: ExpandClause | ExpandClause[],
+    pagination: PaginationParams = {},
+  ): Promise<PaginatedResponse<Student>> {
+    return this.query({ expand, ...this.buildPaginationConfig(pagination) });
+  }
+
+  // ==========================================================================
+  // Specialized Query Methods
+  // ==========================================================================
+
+  /**
+   * Get active customers only (students)
+   * @param pagination - Page and page size
+   * @returns Paginated response with active customers
+   */
+  async getActiveCustomers(pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: and(filter("IsCustomer", "eq", true), filter("IsActive", "eq", true)),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Get active employees only
+   * @param pagination - Page and page size
+   * @returns Paginated response with active employees
+   */
+  async getActiveEmployees(pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: and(filter("IsEmployee", "eq", true), filter("IsActive", "eq", true)),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Get active vendors only
+   * @param pagination - Page and page size
+   * @returns Paginated response with active vendors
+   */
+  async getActiveVendors(pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: and(filter("IsVendor", "eq", true), filter("IsActive", "eq", true)),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Search by name using contains method
+   * @param searchTerm - Search term
+   * @param pagination - Page and page size
+   * @returns Paginated response with matching students
+   */
+  async searchByName(searchTerm: string, pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: methodFilter("contains", "Name", searchTerm),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Search by email using contains method
+   * @param searchTerm - Email search term
+   * @param pagination - Page and page size
+   * @returns Paginated response with matching students
+   */
+  async searchByEmail(searchTerm: string, pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: and(methodFilter("contains", "EMail", searchTerm), filter("IsActive", "eq", true)),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Get students by BP Group ID
+   * @param groupId - BP Group ID
+   * @param pagination - Page and page size
+   * @returns Paginated response with students in the group
+   */
+  async getByBpGroupId(groupId: number, pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: and(filter("C_BP_Group_ID", "eq", groupId), filter("IsActive", "eq", true)),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Get students by Value (search key) using IN filter
+   * @param values - Array of Value field values
+   * @param pagination - Page and page size
+   * @returns Paginated response with matching students
+   *
+   * @example
+   * const result = await service.getByValues(['10A-001', '10A-002', '10A-003']);
+   */
+  async getByValues(values: string[], pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: and(inFilter("Value", values), filter("IsActive", "eq", true)),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Get students created after a specific date
+   * @param date - ISO date string
+   * @param pagination - Page and page size
+   * @returns Paginated response with students created after the date
+   */
+  async getCreatedAfter(date: string, pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: and(filter("Created", "ge", date), filter("IsActive", "eq", true)),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Get students created before a specific date
+   * @param date - ISO date string
+   * @param pagination - Page and page size
+   * @returns Paginated response with students created before the date
+   */
+  async getCreatedBefore(date: string, pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: and(filter("Created", "le", date), filter("IsActive", "eq", true)),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Get students with name starting with prefix
+   * @param prefix - Name prefix
+   * @param pagination - Page and page size
+   * @returns Paginated response with matching students
+   */
+  async getNameStartingWith(prefix: string, pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: methodFilter("startswith", "Name", prefix),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Complex query example: Active customers with specific criteria
+   * @param namePrefix - Optional name prefix filter
+   * @param pagination - Page and page size
+   * @returns Paginated response with filtered students
+   */
+  async getActiveCustomersWithNamePrefix(
+    namePrefix: string,
+    pagination: PaginationParams = {},
+  ): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      filter: and(
+        filter("IsCustomer", "eq", true),
+        filter("IsActive", "eq", true),
+        methodFilter("startswith", "Name", namePrefix),
+      ),
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  /**
+   * Query with iDempiere-specific options
+   * @param options - iDempiere query options
+   * @param pagination - Page and page size
+   * @returns Paginated response
+   *
+   * @example
+   * // With validation rule
+   * const result = await service.queryWithOptions(
+   *   { valrule: 210, context: { M_Product_ID: 124 } }
+   * );
+   *
+   * @example
+   * // With SQL tracing
+   * const result = await service.queryWithOptions(
+   *   { showsql: true }
+   * );
+   */
+  async queryWithOptions(
+    options: {
+      valrule?: string | number;
+      context?: Record<string, string | number>;
+      showsql?: boolean;
+      showsqlNoData?: boolean;
+      label?: string;
+      showlabel?: boolean | string[];
+    },
+    pagination: PaginationParams = {},
+  ): Promise<PaginatedResponse<Student>> {
+    return this.query({
+      idempiere: options,
+      ...this.buildPaginationConfig(pagination),
+    });
+  }
+
+  // ==========================================================================
+  // CRUD Methods using base service
+  // ==========================================================================
+
+  /**
+   * Get paginated list of students (using getStudents for backward compatibility)
+   * @param pagination - Page and page size
    * @returns Paginated list of students
    */
-  async getStudents(pagination: PaginationParams = {}, filters?: QueryFilter[]): Promise<PaginatedResponse<Student>> {
-    const params: Record<string, string | number> = {
-      page: pagination.page ?? 1,
-      pagesize: pagination.pageSize ?? IDEMPIERE_CONFIG.defaultPageSize,
-    };
-
-    // Add filters if provided
-    if (filters && filters.length > 0) {
-      // iDempiere uses query string format for filters
-      // Example: ?filter=Name_Eq_John&filter=IsActive_Eq_true
-      filters.forEach((filter, index) => {
-        params[`filter[${index}]`] = `${filter.column}_${filter.operator}_${filter.value}`;
-      });
-    }
-
-    // Default filter for active students only
-    if (!filters?.some((f) => f.column === "IsActive")) {
-      const filterCount = filters?.length ?? 0;
-      params[`filter[${filterCount}]`] = "IsActive_Eq_true";
-    }
-
-    try {
-      const response = await this.client.get<{
-        records?: BusinessPartner[];
-        page?: number;
-        pageSize?: number;
-        totalPages?: number;
-        totalRecords?: number;
-        // sistematis backend specific fields
-        "page-count"?: number;
-        "records-size"?: number;
-        "skip-records"?: number;
-        "row-count"?: number;
-      }>(IDEMPIERE_CONFIG.endpoints.businessPartner, params);
-
-      const records = response.records ?? [];
-      const students = transformBPartnersToStudents(records);
-
-      // Handle both standard and sistematis pagination response
-      const totalPages = response.totalPages ?? response["page-count"] ?? 1;
-      const pageSize = response.pageSize ?? response["records-size"] ?? IDEMPIERE_CONFIG.defaultPageSize;
-      const totalRecords = response.totalRecords ?? response["row-count"] ?? 0;
-
-      return {
-        records: students,
-        page: response.page ?? 1,
-        pageSize,
-        totalPages,
-        totalRecords,
-      };
-    } catch (error) {
-      console.error("Failed to fetch students:", error);
-      return {
-        records: [],
-        page: 1,
-        pageSize: IDEMPIERE_CONFIG.defaultPageSize,
-        totalPages: 0,
-        totalRecords: 0,
-      };
-    }
+  async getStudents(pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
+    return this.getActiveCustomers(pagination);
   }
 
   /**
@@ -90,16 +322,7 @@ export class BusinessPartnerService {
    * @returns Student or null if not found
    */
   async getStudentById(bpartnerId: number): Promise<Student | null> {
-    try {
-      const response = await this.client.get<BusinessPartner>(
-        `${IDEMPIERE_CONFIG.endpoints.businessPartner}/${bpartnerId}`,
-      );
-
-      return transformBPartnerToStudent(response);
-    } catch (error) {
-      console.error(`Failed to fetch student ${bpartnerId}:`, error);
-      return null;
-    }
+    return this.getById(bpartnerId);
   }
 
   /**
@@ -108,37 +331,22 @@ export class BusinessPartnerService {
    * @returns Student or null if not found
    */
   async getStudentByValue(value: string): Promise<Student | null> {
-    try {
-      const params = {
-        filter: `Value_Eq_${value}`,
-      };
+    const result = await this.query({
+      filter: filter("Value", "eq", value),
+      top: 1,
+    });
 
-      const response = await this.client.get<{ records?: BusinessPartner[] }>(
-        IDEMPIERE_CONFIG.endpoints.businessPartner,
-        params,
-      );
-
-      const records = response.records ?? [];
-      if (records.length === 0) return null;
-
-      return transformBPartnerToStudent(records[0] ?? ({} as BusinessPartner));
-    } catch (error) {
-      console.error(`Failed to fetch student by value ${value}:`, error);
-      return null;
-    }
+    return result.records[0] ?? null;
   }
 
   /**
-   * Search students by name, email, or search key
+   * Search students by name or email
    * @param searchTerm - Search term
    * @param pagination - Page and page size
    * @returns Paginated list of matching students
    */
   async searchStudents(searchTerm: string, pagination: PaginationParams = {}): Promise<PaginatedResponse<Student>> {
-    // Use multiple filters for search (Name OR Value OR EMail)
-    const filters: QueryFilter[] = [{ column: "Name", operator: "Like", value: `%${searchTerm}%` }];
-
-    return this.getStudents(pagination, filters);
+    return this.searchByName(searchTerm, pagination);
   }
 
   /**
@@ -151,18 +359,12 @@ export class BusinessPartnerService {
     grade: string | number,
     pagination: PaginationParams = {},
   ): Promise<PaginatedResponse<Student>> {
-    let filterValue: string;
-
     if (typeof grade === "number") {
-      filterValue = grade.toString();
-    } else {
-      // Use grade name, assuming BP Group has matching name
-      filterValue = grade;
+      return this.getByBpGroupId(grade, pagination);
     }
-
-    const filters: QueryFilter[] = [{ column: "C_BP_Group_ID", operator: "Eq", value: filterValue }];
-
-    return this.getStudents(pagination, filters);
+    // For grade name, we'd need to query by group name
+    // This would require joining with C_BP_Group
+    return this.searchByName(grade, pagination);
   }
 
   /**
@@ -171,24 +373,7 @@ export class BusinessPartnerService {
    * @returns Created student or null if failed
    */
   async createStudent(student: Partial<Student>): Promise<Student | null> {
-    try {
-      const bPartnerData = transformStudentToBPartner(student);
-
-      const response = await this.client.post<{ records?: BusinessPartner[] }>(
-        IDEMPIERE_CONFIG.endpoints.businessPartner,
-        {
-          records: [bPartnerData],
-        },
-      );
-
-      const records = response.records ?? [];
-      if (records.length === 0) return null;
-
-      return transformBPartnerToStudent(records[0] ?? ({} as BusinessPartner));
-    } catch (error) {
-      console.error("Failed to create student:", error);
-      return null;
-    }
+    return this.create(student);
   }
 
   /**
@@ -198,24 +383,7 @@ export class BusinessPartnerService {
    * @returns Updated student or null if failed
    */
   async updateStudent(bpartnerId: number, student: Partial<Student>): Promise<Student | null> {
-    try {
-      const bPartnerData = transformStudentToBPartner(student);
-
-      const response = await this.client.put<{ records?: BusinessPartner[] }>(
-        `${IDEMPIERE_CONFIG.endpoints.businessPartner}/${bpartnerId}`,
-        {
-          records: [bPartnerData],
-        },
-      );
-
-      const records = response.records ?? [];
-      if (records.length === 0) return null;
-
-      return transformBPartnerToStudent(records[0] ?? ({} as BusinessPartner));
-    } catch (error) {
-      console.error(`Failed to update student ${bpartnerId}:`, error);
-      return null;
-    }
+    return this.update(bpartnerId, student);
   }
 
   /**
@@ -224,17 +392,7 @@ export class BusinessPartnerService {
    * @returns true if successful, false otherwise
    */
   async deleteStudent(bpartnerId: number): Promise<boolean> {
-    try {
-      // Instead of hard delete, set IsActive = false
-      await this.client.put(`${IDEMPIERE_CONFIG.endpoints.businessPartner}/${bpartnerId}`, {
-        records: [{ IsActive: false }],
-      });
-
-      return true;
-    } catch (error) {
-      console.error(`Failed to delete student ${bpartnerId}:`, error);
-      return false;
-    }
+    return this.delete(bpartnerId);
   }
 
   /**
@@ -268,6 +426,22 @@ export class BusinessPartnerService {
         byGrade: {},
       };
     }
+  }
+
+  // ==========================================================================
+  // Transformation methods override
+  // ==========================================================================
+
+  protected transformToAppEntity(entities: BusinessPartner[]): Student[] {
+    return transformBPartnersToStudents(entities);
+  }
+
+  protected transformSingleToAppEntity(entity: BusinessPartner): Student {
+    return transformBPartnerToStudent(entity);
+  }
+
+  protected transformFromAppEntity(appEntity: Partial<Student>): Partial<BusinessPartner> {
+    return transformStudentToBPartner(appEntity);
   }
 }
 

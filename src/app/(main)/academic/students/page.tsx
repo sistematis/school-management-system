@@ -2,17 +2,21 @@
 
 import { useState } from "react";
 
+import { useRouter } from "next/navigation";
+
 import {
   Calendar,
   Download,
   Filter,
   GraduationCap,
   Loader2,
+  Lock,
   Mail,
   MoreVertical,
   Pencil,
   Phone,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   User,
@@ -23,7 +27,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// iDempiere API imports
 import {
   useDeleteStudent,
   useIdempiereAuthActions,
@@ -32,6 +35,8 @@ import {
   useStudentStats,
   useStudents,
 } from "@/lib/hooks/use-idempiere-data";
+// iDempiere API imports
+import { useIdempiereAuth } from "@/lib/stores/idempiere-auth.store";
 
 function StudentCard({
   student,
@@ -143,8 +148,10 @@ function StatsCards({
 }
 
 export default function StudentsPage() {
+  const router = useRouter();
   const isAuthenticated = useIdempiereAuthenticated();
-  const { login } = useIdempiereAuthActions();
+  const isCheckingAuth = useIdempiereAuth((state) => state.isCheckingAuth);
+  const { login, isLoading: authLoading } = useIdempiereAuthActions();
 
   // State for filters and pagination
   const [searchTerm, setSearchTerm] = useState("");
@@ -186,35 +193,46 @@ export default function StudentsPage() {
 
   const totalPages = displayData?.totalPages ?? 1;
 
-  // Handle login for demo
-  const handleLogin = async () => {
-    // This is a demo login - in production, you'd have a proper login form
-    await login("demo", "demo");
-  };
+  // Show loading spinner while checking authentication on initial load
+  // This prevents the "session expired" flash when page loads with valid token
+  if (isCheckingAuth) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="mt-2 text-muted-foreground">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Show login prompt if not authenticated
+  // Show login prompt only after auth check is complete and user is not authenticated
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <Card className="max-w-md p-8 text-center">
-          <h2 className="mb-4 font-bold text-2xl">iDempiere Authentication Required</h2>
+          <Lock className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h2 className="mb-2 font-bold text-2xl">Login Required</h2>
           <p className="mb-6 text-muted-foreground">
-            Please configure your iDempiere REST API credentials in the environment variables to access the student
-            data.
+            Your session has expired. Please login to access the student information system.
           </p>
-          <div className="space-y-4 text-left text-sm">
-            <p className="font-semibold">Required Environment Variables:</p>
-            <ul className="list-inside list-disc space-y-1 text-muted-foreground">
-              <li>NEXT_PUBLIC_IDEMPIERE_API_URL</li>
-              <li>NEXT_PUBLIC_IDEMPIERE_CLIENT_ID</li>
-              <li>NEXT_PUBLIC_IDEMPIERE_ROLE_ID</li>
-              <li>NEXT_PUBLIC_IDEMPIERE_ORG_ID</li>
-            </ul>
-          </div>
-          <Button onClick={handleLogin} className="mt-6" disabled>
-            Connect to iDempiere
+          <Button onClick={() => router.push("/auth/login")} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Go to Login Page
           </Button>
         </Card>
+      </div>
+    );
+  }
+
+  // Show loading spinner while loading data
+  if (isLoading && students.length === 0) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="mt-2 text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }

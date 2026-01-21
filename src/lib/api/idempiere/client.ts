@@ -403,6 +403,36 @@ export class IdempiereClient {
   }
 
   /**
+   * Query iDempiere models using OData-style query parameters
+   * Supports: $filter, $orderby, $top, $skip, $select, $expand, $valrule, $context, etc.
+   *
+   * @param endpoint - API endpoint (e.g., "/models/C_BPartner")
+   * @param params - Query parameters object with OData-style keys
+   * @returns Typed response
+   *
+   * @example
+   * const response = await client.query("/models/C_BPartner", {
+   *   "$filter": "Name eq 'John' AND IsActive eq true",
+   *   "$orderby": "Created desc",
+   *   "$top": 10,
+   *   "$select": "Name,Value,EMail"
+   * });
+   */
+  async query<T>(endpoint: string, params?: Record<string, string | number | boolean>): Promise<T> {
+    let url = endpoint;
+
+    if (params && Object.keys(params).length > 0) {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        searchParams.append(key, String(value));
+      });
+      url += `?${searchParams.toString()}`;
+    }
+
+    return this.request<T>(url, { method: "GET" });
+  }
+
+  /**
    * Make POST request
    */
   async post<T>(endpoint: string, data: unknown): Promise<T> {

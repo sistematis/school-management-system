@@ -39,6 +39,7 @@ interface AuthState {
   // State
   isAuthenticated: boolean;
   isLoading: boolean;
+  isCheckingAuth: boolean; // Track initial auth check on app load
   user: {
     userId: number | null;
     clientId: number | null;
@@ -66,6 +67,7 @@ export const useIdempiereAuth = create<AuthState>()(
       // Initial state
       isAuthenticated: false,
       isLoading: false,
+      isCheckingAuth: true, // Start with true - checking auth on app load
       user: null,
       token: null,
       error: null,
@@ -164,6 +166,7 @@ export const useIdempiereAuth = create<AuthState>()(
 
           set({
             isAuthenticated: true,
+            isCheckingAuth: false,
             user: currentUser,
             token: localStorage.getItem("idempiere_token"),
           });
@@ -174,6 +177,7 @@ export const useIdempiereAuth = create<AuthState>()(
           // Clear state if not authenticated
           set({
             isAuthenticated: false,
+            isCheckingAuth: false,
             user: null,
             token: null,
           });
@@ -221,9 +225,10 @@ export const useIdempiereAuth = create<AuthState>()(
     }),
     {
       name: "idempiere-auth-storage",
-      // Only persist these fields
+      // Persist all auth state including isAuthenticated
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
+        isCheckingAuth: state.isCheckingAuth,
         user: state.user,
         token: state.token,
       }),

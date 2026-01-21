@@ -146,12 +146,52 @@ export interface QueryFilter {
 }
 
 /**
- * Generic query request
+ * Generic query request (legacy format - use QueryBuilder for new code)
+ * @deprecated Use QueryBuilder from '@/lib/api/idempiere/query' instead
  */
 export interface QueryRequest extends PaginationParams {
   filters?: QueryFilter[];
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+}
+
+// =============================================================================
+// OData-style Query Types (new - use QueryBuilder)
+// =============================================================================
+
+/**
+ * iDempiere OData-style query response wrapper
+ * Based on: https://bxservice.github.io/idempiere-rest-docs/docs/api-guides/crud-operations/querying-data
+ */
+export interface ODataResponse<T> {
+  /** Array of records */
+  records: T[];
+  /** Total number of pages */
+  "page-count": number;
+  /** Number of records in current page */
+  "records-size": number;
+  /** Number of skipped records */
+  "skip-records"?: number;
+  /** Total row count */
+  "row-count": number;
+  /** Array count (same as records-size) */
+  "array-count"?: number;
+  /** Optional: SQL command (when showsql is enabled) */
+  "sql-command"?: string;
+  /** Optional: Assigned labels (when showlabel is enabled) */
+  "assigned-labels"?: Array<{ Name: string; Description?: string }>;
+}
+
+/**
+ * Single record OData response
+ */
+export interface ODataSingleResponse<T> {
+  /** The record */
+  [key: string]: T | string | undefined | Array<{ Name: string; Description?: string }>;
+  /** Optional: SQL command (when showsql is enabled) */
+  "sql-command"?: string;
+  /** Optional: Assigned labels (when showlabel is enabled) */
+  "assigned-labels"?: Array<{ Name: string; Description?: string }>;
 }
 
 // =============================================================================
