@@ -156,8 +156,9 @@ export const useIdempiereAuth = create<AuthState>()(
 
       /**
        * Check authentication status on app load
+       * Attempts to refresh token if expired but refresh token exists
        */
-      checkAuth: () => {
+      checkAuth: async () => {
         const authService = getAuthService();
         const isAuth = authService.isAuthenticated();
 
@@ -174,7 +175,24 @@ export const useIdempiereAuth = create<AuthState>()(
           // Set authentication cookie for middleware
           setAuthCookie();
         } else {
-          // Clear state if not authenticated
+          // Check if we have a refresh token to attempt refresh
+          const refreshToken = localStorage.getItem("idempiere_refresh_token");
+          const hasAccessToken = !!localStorage.getItem("idempiere_token");
+
+          // If we have an access token that's expired AND a refresh token, try to refresh
+          if (hasAccessToken && refreshToken) {
+            try {
+              const success = await get().refreshToken();
+              if (success) {
+                // Refresh succeeded, auth state is now updated
+                return;
+              }
+            } catch {
+              // Refresh failed, fall through to logout
+            }
+          }
+
+          // No valid token or refresh failed - clear state
           set({
             isAuthenticated: false,
             isCheckingAuth: false,

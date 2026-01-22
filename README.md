@@ -510,7 +510,32 @@ function StudentsPage() {
 4. **Use Token**: Include `Authorization: Bearer {token}` header
 5. **Auto Refresh**: Token refreshes automatically on 401 response
 
-Based on: [iDempiere REST API Documentation](https://bxservice.github.io/idempiere-rest-docs/)
+### Token Refresh Implementation
+
+The application implements best practices for refresh token handling:
+
+- **Automatic Token Refresh**: When a 401 Unauthorized response is received, the client automatically attempts to refresh the access token using the stored refresh token
+- **Refresh Endpoint**: POST `/api/v1/auth/refresh` with body:
+  ```json
+  {
+    "refresh_token": "{{refreshToken}}",
+    "clientId": {{clientId}},
+    "userId": {{userId}}
+  }
+  ```
+- **Response**: Returns new access token and refresh token:
+  ```json
+  {
+    "token": "eyJraWQiOiJpZ....",
+    "refresh_token": "eyJraWQiOiJpZG..."
+  }
+  ```
+- **Token Expiration**: Access tokens expire after 1 hour, refresh tokens expire after 24 hours
+- **Concurrent Request Handling**: Prevents multiple simultaneous refresh attempts using a promise queue
+- **Storage**: Tokens are stored in localStorage with keys `idempiere_token` and `idempiere_refresh_token`
+- **Fallback**: If refresh fails, the user is automatically logged out and redirected to login
+
+Based on: [iDempiere REST API Documentation](https://bxservice.github.io/idempiere-rest-docs/docs/api-guides/authentication#-refresh-token)
 
 ## Testing Coverage
 
