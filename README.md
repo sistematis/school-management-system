@@ -83,7 +83,8 @@ src/
 │   │       ├── transformers.ts # Data mapping
 │   │       └── services/    # Per-entity services
 │   ├── hooks/               # Custom React hooks
-│   │   └── use-idempiere-data.ts
+│   │   ├── use-debounce.ts  # Debounce hook for search inputs
+│   │   └── use-idempiere-data.ts # React Query hooks
 │   ├── stores/              # Zustand stores
 │   │   └── idempiere-auth.store.ts
 │   └── utils.ts
@@ -153,9 +154,26 @@ Student Information System with comprehensive profile management including perso
 
 **Features:**
 - Card-based student display with avatars
-- Search and filter functionality
-- Export capabilities
+- **Zero-Latency Input Focus**: Cursor remains active in search field during and after API hits/state updates
+- **Debounced auto-search** (300ms delay) that automatically triggers as you type
+- **Ref-based focus management**: Uses `useRef` with focus tracking and automatic restoration after re-renders
+- **Optimistic UI/Non-blocking loading**: Loading indicator doesn't overlay or disable the input field
+- **Loading indicator** (subtle spinner) during search operations
+- **Empty state handling** with helpful messages when no results are found
+- Grade filtering and export capabilities
 - Statistics dashboard
+
+**Technical Details:**
+- Uses `useDebounce` hook for efficient search debouncing (300ms)
+- Maintains input focus across re-renders using controlled inputs, refs, and focus restoration
+- React Query for data fetching with automatic caching
+- iDempiere REST API integration
+
+**Focus Management Implementation:**
+- `inputFocusedRef` tracks whether the search input was interacted with
+- `useEffect` with `setTimeout(0)` ensures focus is restored after React completes rendering
+- `onFocus` and `onBlur` handlers properly track focus state
+- Focus is restored whenever `isLoading` or `isSearchLoading` state changes
 
 ### Curriculum (`/academic/curriculum`)
 Course and syllabus management with credit hour tracking.

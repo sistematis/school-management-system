@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -27,9 +27,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 import {
   useDeleteStudent,
-  useIdempiereAuthActions,
   useIdempiereAuthenticated,
   useSearchStudents,
   useStudentStats,
@@ -151,7 +151,6 @@ export default function StudentsPage() {
   const router = useRouter();
   const isAuthenticated = useIdempiereAuthenticated();
   const isCheckingAuth = useIdempiereAuth((state) => state.isCheckingAuth);
-  const { login, isLoading: authLoading } = useIdempiereAuthActions();
 
   // State for filters and pagination
   const [searchTerm, setSearchTerm] = useState("");
@@ -159,17 +158,28 @@ export default function StudentsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 9; // Show 9 cards per page (3x3 grid)
 
+  // Ref to maintain input focus across re-renders
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  // Track if input was focused to restore it after re-renders
+  const inputFocusedRef = useRef(false);
+
+  // Debounce search term with 300ms delay for auto-search
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
   // Fetch students data with React Query
   const { data: studentsData, isLoading: studentsLoading, error: studentsError } = useStudents({ page, pageSize });
 
-  // Fetch search results when searching
+  // Fetch search results when debounced search term changes
   const { data: searchData, isLoading: searchLoading } = useSearchStudents(
-    searchTerm,
+    debouncedSearchTerm,
     { page, pageSize },
     {
-      enabled: searchTerm.length > 0,
+      enabled: debouncedSearchTerm.length > 0,
     },
   );
+
+  // Determine if we're showing a loading state for search
+  const isSearchLoading = searchTerm !== debouncedSearchTerm || searchLoading;
 
   // Fetch student statistics
   const { data: statsData, isLoading: statsLoading } = useStudentStats();
@@ -177,10 +187,52 @@ export default function StudentsPage() {
   // Delete mutation
   const _deleteStudent = useDeleteStudent();
 
-  // Use search results if searching, otherwise use regular results
-  const displayData = searchTerm.length > 0 ? searchData : studentsData;
-  const isLoading = searchTerm.length > 0 ? searchLoading : studentsLoading;
+  // Use search results if searching (using debounced term), otherwise use regular results
+  const displayData = debouncedSearchTerm.length > 0 ? searchData : studentsData;
+  const isLoading = debouncedSearchTerm.length > 0 ? searchLoading : studentsLoading;
   const students = displayData?.records ?? [];
+
+  // Reset page when debounced search term changes
+  useEffect(() => {
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm]);
+
+  // Effect to maintain input focus across re-renders
+  // This ensures the search input never loses focus when the component updates due to loading state changes
+  useEffect(() => {
+    // Restore focus if the input was previously focused and we have an active search or content
+    if (inputFocusedRef.current && searchInputRef.current) {
+      // Use setTimeout to ensure focus is restored after React completes the render
+      const timeoutId = setTimeout(() => {
+        if (searchInputRef.current && document.activeElement !== searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, isSearchLoading]);
+
+  // Handle search input change - maintains focus by using controlled input
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    // Track that the input has been interacted with
+    inputFocusedRef.current = true;
+    setSearchTerm(e.target.value);
+  }, []);
+
+  // Track when input gains focus
+  const handleSearchFocus = useCallback(() => {
+    inputFocusedRef.current = true;
+  }, []);
+
+  // Track when input loses focus
+  const handleSearchBlur = useCallback(() => {
+    // Only clear the focused ref if not searching
+    if (!searchTerm) {
+      inputFocusedRef.current = false;
+    }
+  }, [searchTerm]);
 
   // Calculate stats from data
   const stats = [
@@ -260,14 +312,18 @@ export default function StudentsPage() {
           <div className="relative flex-1">
             <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-5 w-5 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               placeholder="Search by name, roll number, or email..."
               className="pl-10"
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1); // Reset to page 1 when searching
-              }}
+              onChange={handleSearchChange}
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
             />
+            {/* Search loading indicator - subtle spinner */}
+            {isSearchLoading && (
+              <Loader2 className="-translate-y-1/2 absolute top-1/2 right-3 h-4 w-4 animate-spin text-muted-foreground opacity-60" />
+            )}
           </div>
           <Select value={selectedGrade} onValueChange={setSelectedGrade}>
             <SelectTrigger className="w-[200px]">
@@ -307,18 +363,24 @@ export default function StudentsPage() {
         <div className="flex min-h-[400px] items-center justify-center">
           <div className="text-center">
             <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="mt-2 text-muted-foreground">Loading students from iDempiere...</p>
+            <p className="mt-2 text-muted-foreground">
+              {debouncedSearchTerm ? "Searching students..." : "Loading students from iDempiere..."}
+            </p>
           </div>
         </div>
       )}
 
-      {/* Student Cards Grid */}
+      {/* Student Cards Grid - Empty State */}
       {!isLoading && students.length === 0 && (
         <Card className="p-12 text-center">
           <GraduationCap className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 font-semibold text-lg">No students found</h3>
+          <h3 className="mt-4 font-semibold text-lg">
+            {debouncedSearchTerm ? "No results found" : "No students found"}
+          </h3>
           <p className="mt-2 text-muted-foreground">
-            {searchTerm ? "No students match your search criteria." : "No students exist in the system yet."}
+            {debouncedSearchTerm
+              ? `No students match "${debouncedSearchTerm}". Try a different search term.`
+              : "No students exist in the system yet."}
           </p>
         </Card>
       )}

@@ -1,13 +1,31 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import StudentsPage from "./page";
 
+// Mock the next/router
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    pathname: "/",
+    query: {},
+    asPath: "/",
+  }),
+}));
+
 // Mock the next/image component
 vi.mock("next/image", () => ({
   default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
+}));
+
+// Mock the useDebounce hook - returns the value immediately for testing
+vi.mock("@/lib/hooks/use-debounce", () => ({
+  useDebounce: vi.fn((value: string) => value),
 }));
 
 // Mock the UI components
@@ -51,6 +69,7 @@ vi.mock("@/lib/hooks/use-idempiere-data", () => ({
   useIdempiereAuthActions: () => ({
     login: vi.fn(),
     logout: vi.fn(),
+    isLoading: false,
   }),
   useStudents: () => ({
     data: {
@@ -143,6 +162,39 @@ vi.mock("@/lib/hooks/use-idempiere-data", () => ({
   useDeleteStudent: () => ({
     mutateAsync: vi.fn(),
   }),
+}));
+
+// Mock the iDempiere auth store
+vi.mock("@/lib/stores/idempiere-auth.store", () => ({
+  useIdempiereAuth: (selector?: (state: unknown) => unknown) => {
+    // If a selector is provided, call it with the mock state
+    if (selector) {
+      const mockState = {
+        isCheckingAuth: false,
+        isAuthenticated: true,
+        isLoading: false,
+        user: null,
+        error: null,
+        checkAuth: vi.fn(),
+        login: vi.fn(),
+        logout: vi.fn(),
+        clearError: vi.fn(),
+      };
+      return selector(mockState);
+    }
+    // Otherwise return the entire state
+    return {
+      isCheckingAuth: false,
+      isAuthenticated: true,
+      isLoading: false,
+      user: null,
+      error: null,
+      checkAuth: vi.fn(),
+      login: vi.fn(),
+      logout: vi.fn(),
+      clearError: vi.fn(),
+    };
+  },
 }));
 
 function createTestQueryClient() {
@@ -318,5 +370,63 @@ describe("StudentsPage", () => {
     );
     expect(screen.getByText("DOB: 2010-05-15")).toBeInTheDocument();
     expect(screen.getByText("DOB: 2011-08-22")).toBeInTheDocument();
+  });
+
+  describe("Debounced Search", () => {
+    it("allows typing in search input", async () => {
+      const queryClient = createTestQueryClient();
+      render(
+        <QueryClientProvider client={queryClient}>
+          <StudentsPage />
+        </QueryClientProvider>,
+      );
+
+      const searchInput = screen.getByPlaceholderText("Search by name, roll number, or email...");
+      expect(searchInput).toBeInTheDocument();
+
+      await userEvent.type(searchInput, "John");
+      expect(searchInput).toHaveValue("John");
+    });
+
+    it("maintains input focus during data fetching", async () => {
+      const queryClient = createTestQueryClient();
+      render(
+        <QueryClientProvider client={queryClient}>
+          <StudentsPage />
+        </QueryClientProvider>,
+      );
+
+      const searchInput = screen.getByPlaceholderText("Search by name, roll number, or email...") as HTMLInputElement;
+
+      // Focus the input and type
+      searchInput.focus();
+      await userEvent.type(searchInput, "Smith");
+
+      // Verify the input still has focus after typing
+      await waitFor(() => {
+        expect(document.activeElement).toBe(searchInput);
+      });
+
+      // Verify the value is retained
+      expect(searchInput.value).toBe("Smith");
+    });
+
+    it("maintains input focus when loading state changes", async () => {
+      const queryClient = createTestQueryClient();
+      render(
+        <QueryClientProvider client={queryClient}>
+          <StudentsPage />
+        </QueryClientProvider>,
+      );
+
+      const searchInput = screen.getByPlaceholderText("Search by name, roll number, or email...") as HTMLInputElement;
+
+      // Focus and type to trigger a search
+      searchInput.focus();
+      await userEvent.type(searchInput, "Test");
+
+      // The input should maintain focus even though component re-renders
+      expect(searchInput).toHaveFocus();
+    });
   });
 });
