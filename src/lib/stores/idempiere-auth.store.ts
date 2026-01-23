@@ -40,6 +40,8 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isCheckingAuth: boolean; // Track initial auth check on app load
+  isRefreshing: boolean; // Track if token is currently being refreshed
+  refreshCount: number; // Track number of successful refreshes in current session
   user: {
     userId: number | null;
     clientId: number | null;
@@ -56,6 +58,7 @@ interface AuthState {
   checkAuth: () => void;
   clearError: () => void;
   refreshToken: () => Promise<boolean>;
+  setRefreshing: (isRefreshing: boolean) => void;
 }
 
 /**
@@ -68,6 +71,8 @@ export const useIdempiereAuth = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       isCheckingAuth: true, // Start with true - checking auth on app load
+      isRefreshing: false,
+      refreshCount: 0,
       user: null,
       token: null,
       error: null,
@@ -240,6 +245,13 @@ export const useIdempiereAuth = create<AuthState>()(
           return false;
         }
       },
+
+      /**
+       * Set refreshing state for UI feedback
+       */
+      setRefreshing: (isRefreshing: boolean) => {
+        set({ isRefreshing });
+      },
     }),
     {
       name: "idempiere-auth-storage",
@@ -247,6 +259,8 @@ export const useIdempiereAuth = create<AuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         isCheckingAuth: state.isCheckingAuth,
+        isRefreshing: state.isRefreshing,
+        refreshCount: state.refreshCount,
         user: state.user,
         token: state.token,
       }),

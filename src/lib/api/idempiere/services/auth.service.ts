@@ -23,7 +23,14 @@ export class AuthService {
    */
   async login(username: string, password: string): Promise<AuthCompleteResponse | null> {
     try {
-      return await this.client.login(username, password);
+      const result = await this.client.login(username, password);
+
+      // Reset refresh counter on successful login
+      if (result) {
+        this.client.resetRefreshCount();
+      }
+
+      return result;
     } catch (error) {
       console.error("Login failed:", error);
       return null;

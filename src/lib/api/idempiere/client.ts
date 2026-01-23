@@ -51,9 +51,16 @@ export class IdempiereApiError extends Error {
 export class IdempiereClient {
   private baseURL: string;
   private tokenRefreshPromise: Promise<AuthCompleteResponse | null> | null = null;
+  private refreshCount = 0; // Track number of refreshes for dual-endpoint strategy
 
   constructor(baseURL?: string) {
     this.baseURL = baseURL ?? IDEMPIERE_CONFIG.baseURL;
+
+    // Load refresh count from localStorage on init for persistence
+    if (typeof window !== "undefined") {
+      const storedCount = localStorage.getItem("idempiere_refresh_count");
+      this.refreshCount = storedCount ? Number(storedCount) : 0;
+    }
   }
 
   /**
@@ -74,6 +81,7 @@ export class IdempiereClient {
 
   /**
    * Store auth data in localStorage
+   * Uses config values as fallback for clientId, roleId, organizationId if not in response
    */
   private storeAuthData(data: AuthCompleteResponse): void {
     if (typeof window === "undefined") return;
@@ -82,22 +90,45 @@ export class IdempiereClient {
 
     localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
     localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token);
+
+    // userId - must be in response
     if (data.userId) {
       localStorage.setItem(STORAGE_KEYS.USER_ID, String(data.userId));
     }
+
+    // clientId - use response value or fallback to config
     if (data.clientId) {
       localStorage.setItem(STORAGE_KEYS.CLIENT_ID, String(data.clientId));
+    } else {
+      // Fallback to config - needed for refresh requests
+      localStorage.setItem(STORAGE_KEYS.CLIENT_ID, String(IDEMPIERE_CONFIG.clientId));
     }
+
+    // roleId - use response value or fallback to config
     if (data.roleId) {
       localStorage.setItem(STORAGE_KEYS.ROLE_ID, String(data.roleId));
+    } else {
+      // Fallback to config
+      localStorage.setItem(STORAGE_KEYS.ROLE_ID, String(IDEMPIERE_CONFIG.roleId));
     }
+
+    // organizationId - use response value or fallback to config
     if (data.organizationId) {
       localStorage.setItem(STORAGE_KEYS.ORG_ID, String(data.organizationId));
+    } else {
+      // Fallback to config
+      localStorage.setItem(STORAGE_KEYS.ORG_ID, String(IDEMPIERE_CONFIG.organizationId));
     }
+
+    // language
     if (data.language) {
       localStorage.setItem(STORAGE_KEYS.LANGUAGE, data.language);
     }
+
     localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, String(expiresAt));
+
+    // Persist refresh count
+    localStorage.setItem("idempiere_refresh_count", String(this.refreshCount));
   }
 
   /**
@@ -109,6 +140,10 @@ export class IdempiereClient {
     Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key);
     });
+
+    // Reset and clear refresh count
+    this.refreshCount = 0;
+    localStorage.removeItem("idempiere_refresh_count");
   }
 
   /**
@@ -121,6 +156,24 @@ export class IdempiereClient {
     if (!expiresAt) return true;
 
     return Date.now() > Number(expiresAt);
+  }
+
+  /**
+   * Reset refresh counter (call on new login)
+   */
+  public resetRefreshCount(): void {
+    this.refreshCount = 0;
+    if (typeof window !== "undefined") {
+      localStorage.setItem("idempiere_refresh_count", "0");
+    }
+  }
+
+  /**
+   * Get the refresh endpoint
+   * Always uses /auth/refresh for token refresh
+   */
+  private getRefreshEndpoint(): string {
+    return IDEMPIERE_CONFIG.endpoints.authRefresh; // /auth/refresh
   }
 
   /**
@@ -237,56 +290,97 @@ export class IdempiereClient {
 
   /**
    * Perform the actual token refresh
+   * Uses /auth/refresh endpoint with refresh_token, clientId, and userId
    */
   private async performTokenRefresh(): Promise<AuthCompleteResponse | null> {
     const refreshToken = this.getRefreshToken();
     const clientId = localStorage.getItem(STORAGE_KEYS.CLIENT_ID);
     const userId = localStorage.getItem(STORAGE_KEYS.USER_ID);
 
+    // Early validation - must have refresh token
     if (!refreshToken) {
+      console.error("[Token Refresh] No refresh token available");
+      this.clearAuthData();
+      return null;
+    }
+
+    // Must have clientId and userId for refresh request
+    if (!clientId || !userId) {
+      console.error("[Token Refresh] Missing clientId or userId for refresh request", { clientId, userId });
       this.clearAuthData();
       return null;
     }
 
     try {
+      // Use dynamic endpoint based on refresh count
+      const endpoint = this.getRefreshEndpoint();
+
       const body: AuthRefreshRequest = {
         refresh_token: refreshToken,
+        clientId: Number(clientId),
+        userId: Number(userId),
       };
 
-      if (clientId) {
-        body.clientId = Number(clientId);
-      }
-      if (userId) {
-        body.userId = Number(userId);
-      }
+      console.log("[Token Refresh] Requesting token refresh", {
+        endpoint: `${this.baseURL}${endpoint}`,
+        refreshCount: this.refreshCount,
+      });
 
-      const response = await fetch(`${this.baseURL}${IDEMPIERE_CONFIG.endpoints.authRefresh}`, {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(IDEMPIERE_CONFIG.timeout),
       });
 
-      if (!response.ok) {
+      console.log("[Token Refresh] Response status:", response.status);
+
+      // Handle specific error statuses
+      if (response.status === 401 || response.status === 403) {
+        // Clear auth data on unauthorized/forbidden - refresh token is invalid
+        console.error("[Token Refresh] Refresh token invalid or expired, clearing session");
         this.clearAuthData();
+        return null;
+      }
+
+      if (!response.ok) {
+        // For other errors (400, 500, etc.), log but don't clear data immediately
+        const errorText = await response.text().catch(() => "Unknown error");
+        console.error("[Token Refresh] Refresh request failed", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+        // Don't clear auth data - might be a temporary server issue
         return null;
       }
 
       const data = (await response.json()) as AuthRefreshResponse;
 
+      // Increment and store refresh count for next cycle
+      this.refreshCount++;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("idempiere_refresh_count", String(this.refreshCount));
+      }
+
       // Create complete response object
       const completeData: AuthCompleteResponse = {
         token: data.token,
         refresh_token: data.refresh_token,
-        userId: userId ? Number(userId) : 0,
+        userId: Number(userId),
         language: localStorage.getItem(STORAGE_KEYS.LANGUAGE) ?? "en_US",
-        clientId: clientId ? Number(clientId) : undefined,
+        clientId: Number(clientId),
       };
 
       this.storeAuthData(completeData);
+      console.log("[Token Refresh] Token refreshed successfully", {
+        refreshCount: this.refreshCount,
+      });
+
       return completeData;
-    } catch {
-      this.clearAuthData();
+    } catch (error) {
+      // Network or timeout error - don't clear data, might be temporary
+      console.error("[Token Refresh] Refresh request threw error:", error);
       return null;
     }
   }
