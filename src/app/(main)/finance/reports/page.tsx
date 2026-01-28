@@ -150,8 +150,18 @@ const formatCurrency = (amount: number) => {
 };
 
 const summaryStats = [
-  { label: "Total Revenue", value: "Rp 125M", change: "+12.5%", positive: true },
-  { label: "Total Expenses", value: "Rp 85M", change: "-5.2%", positive: false },
+  {
+    label: "Total Revenue",
+    value: "Rp 125M",
+    change: "+12.5%",
+    positive: true,
+  },
+  {
+    label: "Total Expenses",
+    value: "Rp 85M",
+    change: "-5.2%",
+    positive: false,
+  },
   { label: "Net Income", value: "Rp 40M", change: "+18.3%", positive: true },
   { label: "Pending Amount", value: "Rp 32M", change: "+8.3%", positive: true },
 ];
