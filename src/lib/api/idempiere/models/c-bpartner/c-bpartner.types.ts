@@ -99,3 +99,117 @@ export type CBPartnerCreate = Partial<
  * Backward compatibility alias
  */
 export type BusinessPartner = CBPartner;
+
+// =============================================================================
+// Filterable Fields Metadata (for Dynamic Data Table)
+// =============================================================================
+
+import type { LucideIcon } from "lucide-react";
+import { AlertTriangle, Briefcase, Cake, CheckCircle, Globe, Mail, Phone, Store, User, Users } from "lucide-react";
+
+/**
+ * Filterable field metadata for C_BPartner
+ * Maps model fields to their filter capabilities
+ */
+export const CBPartnerFilterableFields = {
+  // Boolean filters (true/false toggles)
+  IsActive: {
+    label: "Active",
+    type: "boolean" as const,
+    operators: ["eq"] as const,
+    icon: CheckCircle,
+  },
+  IsCustomer: {
+    label: "Customer",
+    type: "boolean" as const,
+    operators: ["eq"] as const,
+    icon: User,
+  },
+  IsEmployee: {
+    label: "Employee",
+    type: "boolean" as const,
+    operators: ["eq"] as const,
+    icon: Briefcase,
+  },
+  IsVendor: {
+    label: "Vendor",
+    type: "boolean" as const,
+    operators: ["eq"] as const,
+    icon: Store,
+  },
+  IsSalesRep: {
+    label: "Sales Representative",
+    type: "boolean" as const,
+    operators: ["eq"] as const,
+  },
+
+  // String filters (search, exact match)
+  Name: {
+    label: "Name",
+    type: "string" as const,
+    operators: ["contains", "startswith", "eq"] as const,
+    searchable: true, // Enables global search
+  },
+  Value: {
+    label: "ID/Code",
+    type: "string" as const,
+    operators: ["contains", "eq"] as const,
+  },
+  EMail: {
+    label: "Email",
+    type: "string" as const,
+    operators: ["contains", "eq"] as const,
+    icon: Mail,
+  },
+
+  // Enum-like filters (predefined options)
+  Ad_Language: {
+    label: "Language",
+    type: "enum" as const,
+    operators: ["eq"] as const,
+    options: [
+      { label: "English", value: "en_US" },
+      { label: "Indonesian", value: "id_ID" },
+    ],
+    icon: Globe,
+  },
+
+  // Date filters
+  Birthday: {
+    label: "Birthday",
+    type: "date" as const,
+    operators: ["eq", "gt", "lt"] as const,
+    icon: Cake,
+  },
+
+  // Custom fields for school management
+  parentContact: {
+    label: "Parent Contact",
+    type: "string" as const,
+    operators: ["contains"] as const,
+  },
+  emergencyContact: {
+    label: "Emergency Contact",
+    type: "string" as const,
+    operators: ["contains"] as const,
+    icon: Phone,
+  },
+  allergies: {
+    label: "Allergies",
+    type: "string" as const,
+    operators: ["contains"] as const,
+    icon: AlertTriangle,
+  },
+
+  // Reference fields (with value rules)
+  C_BP_Group_ID: {
+    label: "BP Group",
+    type: "reference" as const,
+    operators: ["eq"] as const,
+    modelName: "C_BP_Group",
+    icon: Users,
+  },
+} as const;
+
+// Type inference from metadata
+export type CBPartnerFilterableField = keyof typeof CBPartnerFilterableFields;
