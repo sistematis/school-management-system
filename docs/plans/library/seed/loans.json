@@ -1,0 +1,37 @@
+[
+  {
+    "bookCopyId": "BCP-001",
+    "memberType": "Student",
+    "memberId": "STU-001",
+    "loanDate": "2024-08-01",
+    "dueDate": "2024-08-15"
+  },
+  {
+    "bookCopyId": "BCP-002",
+    "memberType": "Student",
+    "memberId": "STU-002",
+    "loanDate": "2024-08-05",
+    "dueDate": "2024-08-19"
+  },
+  {
+    "bookCopyId": "BCP-003",
+    "memberType": "Teacher",
+    "memberId": "STF-001",
+    "loanDate": "2024-08-10",
+    "dueDate": "2024-09-10"
+  },
+  {
+    "bookCopyId": "BCP-004",
+    "memberType": "Student",
+    "memberId": "STU-003",
+    "loanDate": "2024-07-20",
+    "dueDate": "2024-08-03"
+  },
+  {
+    "bookCopyId": "BCP-005",
+    "memberType": "Student",
+    "memberId": "STU-004",
+    "loanDate": "2024-08-12",
+    "dueDate": "2024-08-26"
+  }
+]

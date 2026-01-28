@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Payroll September 2024",
+    "payrollType": "Monthly",
+    "payrollYear": 2024,
+    "payrollMonth": 9,
+    "fromDate": "2024-09-01",
+    "toDate": "2024-09-30",
+    "payDate": "2024-09-30"
+  },
+  {
+    "name": "Payroll October 2024",
+    "payrollType": "Monthly",
+    "payrollYear": 2024,
+    "payrollMonth": 10,
+    "fromDate": "2024-10-01",
+    "toDate": "2024-10-31",
+    "payDate": "2024-10-31"
+  }
+]

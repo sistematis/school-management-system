@@ -11,6 +11,43 @@
  * - $select: Property selection
  * - $expand: Related entity expansion
  * - iDempiere-specific: $valrule, $context, showsql, label, showlabel
+ *
+ * @example
+ * // Basic filter and pagination
+ * const query = new QueryBuilder()
+ *   .filter("IsActive", "eq", true)
+ *   .and("GradeLevel", "eq", "10")
+ *   .orderBy("Name", "asc")
+ *   .top(20)
+ *   .build();
+ *
+ * @example
+ * // Method filter (search)
+ * const query = new QueryBuilder()
+ *   .methodFilter("contains", "Name", "John")
+ *   .and("IsActive", "eq", true)
+ *   .build();
+ *
+ * @example
+ * // IN filter
+ * const query = new QueryBuilder()
+ *   .inFilter("Student_ID", [1001, 1002, 1003])
+ *   .build();
+ *
+ * @example
+ * // With expanded related records
+ * const query = new QueryBuilder()
+ *   .filter("IsActive", "eq", true)
+ *   .expand([{ field: "c_bpartner", select: ["Name", "Email"] }])
+ *   .build();
+ *
+ * @example
+ * // iDempiere-specific options
+ * const query = new QueryBuilder()
+ *   .filter("IsActive", "eq", true)
+ *   .withShowSql(true)
+ *   .withShowLabel(["Name", "Description"])
+ *   .build();
  */
 
 // =============================================================================
@@ -662,6 +699,155 @@ export class QueryBuilder {
     cloned.config = JSON.parse(JSON.stringify(this.config));
     cloned.currentFilter = this.config.filter ? JSON.parse(JSON.stringify(this.config.filter)) : undefined;
     return cloned;
+  }
+
+  // ==========================================================================
+  // Convenience methods for common query patterns
+  // ==========================================================================
+
+  /**
+   * Search by name using contains (case-insensitive)
+   * Shortcut for: tolower(field) contains tolower('value')
+   *
+   * @param field - Field name to search
+   * @param value - Search value
+   *
+   * @example
+   * builder.searchByName("Name", "john"); // => contains(tolower(Name),'john')
+   */
+  searchByName(field: string, value: string): this {
+    return this.methodFilter("contains", field, value);
+  }
+
+  /**
+   * Filter by active status
+   * Shortcut for: filter("IsActive", "eq", true)
+   *
+   * @param active - Whether to filter active records (default: true)
+   *
+   * @example
+   * builder.activeOnly(); // => IsActive eq true
+   * builder.activeOnly(false); // => IsActive eq false
+   */
+  activeOnly(active = true): this {
+    return this.filter("IsActive", "eq", active);
+  }
+
+  /**
+   * Filter by date range
+   * Creates: field ge 'fromDate' AND field le 'toDate'
+   *
+   * @param field - Date field name
+   * @param fromDate - Start date (ISO string)
+   * @param toDate - End date (ISO string)
+   *
+   * @example
+   * builder.dateRange("Created", "2024-01-01", "2024-12-31");
+   * // => Created ge '2024-01-01' AND Created le '2024-12-31'
+   */
+  dateRange(field: string, fromDate: string, toDate: string): this {
+    return this.filter(field, "ge", fromDate).and(field, "le", toDate);
+  }
+
+  /**
+   * Filter by IDs
+   * Shortcut for: inFilter(field, values)
+   *
+   * @param field - Field name (typically ends with _ID)
+   * @param values - Array of IDs
+   *
+   * @example
+   * builder.byId("C_BPartner_ID", [1001, 1002, 1003]);
+   * // => C_BPartner_ID in (1001,1002,1003)
+   */
+  byId(field: string, values: Array<string | number>): this {
+    return this.inFilter(field, values);
+  }
+
+  /**
+   * Expand with select (common pattern for getting related entity fields)
+   *
+   * @param field - Field name to expand
+   * @param selectFields - Fields to select from expanded entity
+   *
+   * @example
+   * builder.expandWithSelect("c_bpartner", ["Name", "Email", "Phone"]);
+   * // => $expand=c_bpartner($select=Name,Email,Phone)
+   */
+  expandWithSelect(field: string, selectFields: string[]): this {
+    return this.expand({ field, select: selectFields });
+  }
+
+  /**
+   * Expand with filter and select (for filtering related entities)
+   *
+   * @param field - Field name to expand
+   * @param filterField - Field to filter on in expanded entity
+   * @param filterValue - Value to filter by
+   * @param selectFields - Fields to select from expanded entity
+   *
+   * @example
+   * builder.expandWithFilter("c_orderline", "LineNetAmt", "gt", 1000, ["Line", "LineNetAmt"]);
+   * // => $expand=c_orderline($select=Line,LineNetAmt;$filter=LineNetAmt gt 1000)
+   */
+  expandWithFilter(
+    field: string,
+    filterField: string,
+    operator: Extract<LogicalOperator, "eq" | "neq" | "gt" | "ge" | "lt" | "le">,
+    filterValue: string | number | boolean,
+    selectFields?: string[]
+  ): this {
+    const expandClause: ExpandClause = {
+      field,
+      filter: { type: "logical", field: filterField, operator, value: filterValue }
+    };
+    if (selectFields && selectFields.length > 0) {
+      expandClause.select = selectFields;
+    }
+    return this.expand(expandClause);
+  }
+
+  /**
+   * Expand with custom join key (for master-detail relationships)
+   *
+   * @param field - Field name to expand
+   * @param joinKey - Custom join key (e.g., "salesrep_id" for C_order.salesrep_id)
+   * @param selectFields - Fields to select from expanded entity
+   *
+   * @example
+   * builder.expandWithCustomJoin("ad_user", "salesrep_id", ["Name", "Email"]);
+   * // => $expand=ad_user.salesrep_id($select=Name,Email)
+   */
+  expandWithCustomJoin(field: string, joinKey: string, selectFields: string[]): this {
+    return this.expand({ field, customJoinKey: joinKey, select: selectFields });
+  }
+
+  /**
+   * Create a date filter for records created/updated after a certain date
+   *
+   * @param field - Date field name (e.g., "Created", "Updated")
+   * @param date - Date to compare from (ISO string)
+   *
+   * @example
+   * builder.since("Created", "2024-01-01");
+   * // => Created ge '2024-01-01'
+   */
+  since(field: string, date: string): this {
+    return this.filter(field, "ge", date);
+  }
+
+  /**
+   * Create a date filter for records created/updated before a certain date
+   *
+   * @param field - Date field name (e.g., "Created", "Updated")
+   * @param date - Date to compare to (ISO string)
+   *
+   * @example
+   * builder.before("Created", "2024-12-31");
+   * // => Created le '2024-12-31'
+   */
+  before(field: string, date: string): this {
+    return this.filter(field, "le", date);
   }
 }
 

@@ -91,17 +91,20 @@ export type {
   // OData-style
   ODataResponse,
   ODataSingleResponse,
-  PaginatedResponse,
+  ODataQueryParams,
   // Common
+  ExpandOptions,
+  FilterOperator,
+  MethodFilterOperator,
   PaginationParams,
   Payment,
   PaymentMethod,
   Product,
-  QueryFilter,
-  QueryRequest,
+  SortDirection,
   SchoolAsset,
   SchoolInvoice,
   SchoolPayment,
   // School Management
   Student,
+  TypedFilter,
 } from "./types";

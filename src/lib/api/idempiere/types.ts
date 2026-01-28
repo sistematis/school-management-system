@@ -2,6 +2,16 @@
  * iDempiere REST API TypeScript Types
  *
  * Based on: https://bxservice.github.io/idempiere-rest-docs/docs/api-guides/authentication
+ * And: https://bxservice.github.io/idempiere-rest-docs/docs/api-guides/crud-operations/querying-data
+ *
+ * @example
+ * // OData-style query response
+ * interface StudentResponse extends ODataResponse<StudentRecord> {
+ *   records: StudentRecord[];
+ *   "page-count": number;
+ *   "records-size": number;
+ *   "row-count": number;
+ * }
  */
 
 // =============================================================================
@@ -138,21 +148,151 @@ export interface PaginatedResponse<T> {
 
 /**
  * Query filter for iDempiere models
+ *
+ * Operators match iDempiere REST API standard:
+ * https://bxservice.github.io/idempiere-rest-docs/docs/api-guides/crud-operations/querying-data
+ *
+ * @example
+ * const filter: QueryFilter = {
+ *   column: "IsActive",
+ *   operator: "eq",
+ *   value: true
+ * };
  */
 export interface QueryFilter {
+  /** Field/column name */
   column: string;
-  operator: "Eq" | "Like" | "NotEq" | "GreaterThan" | "LessThan" | "Between";
-  value: string | number | boolean;
+  /** Logical operator */
+  operator: "eq" | "neq" | "in" | "gt" | "ge" | "lt" | "le" | "and" | "or" | "not"
+    | "contains" | "startswith" | "endswith" | "tolower" | "toupper";
+  /** Filter value */
+  value: string | number | boolean | Array<string | number>;
 }
 
 /**
- * Generic query request (legacy format - use QueryBuilder for new code)
- * @deprecated Use QueryBuilder from '@/lib/api/idempiere/query' instead
+ * Generic query request (use ODataQueryParams instead for new code)
  */
 export interface QueryRequest extends PaginationParams {
   filters?: QueryFilter[];
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+}
+
+// =============================================================================
+// OData-style Query Request Types (new - matches documentation)
+// =============================================================================
+
+/**
+ * OData-style query request parameters
+ * Use with QueryBuilder or pass directly to API functions
+ *
+ * @example
+ * const params: ODataQueryParams = {
+ *   $filter: "IsActive eq true AND GradeLevel eq '10'",
+ *   $orderby: "Name asc",
+ *   $top: 20,
+ *   $skip: 0,
+ *   $select: "Name,Email,Phone"
+ * };
+ */
+export interface ODataQueryParams {
+  /** Filter expression */
+  $filter?: string;
+  /** Order by expression */
+  $orderby?: string;
+  /** Number of records to return */
+  $top?: number;
+  /** Number of records to skip */
+  $skip?: number;
+  /** Properties to select */
+  $select?: string;
+  /** Related entities to expand */
+  $expand?: string;
+  /** Validation rule */
+  $valrule?: string | number;
+  /** Context variables (format: "Name:Value,Name2:Value2") */
+  $context?: string;
+  /** Show SQL query in response */
+  showsql?: "true" | "nodata";
+  /** Filter by label */
+  label?: string;
+  /** Include assigned labels in response */
+  showlabel?: "true" | string;
+}
+
+/**
+ * Common filter operators for type-safe filter creation
+ */
+export type FilterOperator =
+  | "eq"    // equals (=)
+  | "neq"   // not equals (!=)
+  | "gt"    // greater than (>)
+  | "ge"    // greater or equal (>=)
+  | "lt"    // less than (<)
+  | "le"    // less or equal (<=)
+  | "and"   // logical AND
+  | "or"    // logical OR
+  | "not";  // logical NOT
+
+/**
+ * Method filter operators for string operations
+ */
+export type MethodFilterOperator =
+  | "contains"    // contains substring
+  | "startswith"  // starts with prefix
+  | "endswith"    // ends with suffix
+  | "tolower"     // convert to lowercase
+  | "toupper";    // convert to uppercase
+
+/**
+ * Sort direction
+ */
+export type SortDirection = "asc" | "desc";
+
+/**
+ * Type-safe filter builder interface
+ * Used to construct filter expressions with type safety
+ *
+ * @example
+ * const filters = {
+ *   IsActive: { eq: true },
+ *   GradeLevel: { eq: "10" },
+ *   Name: { contains: "John" }
+ * };
+ */
+export type TypedFilter<T> = {
+  [K in keyof T]?: {
+    eq?: T[K];
+    neq?: T[K];
+    gt?: T[K];
+    ge?: T[K];
+    lt?: T[K];
+    le?: T[K];
+    in?: Array<T[K]>;
+    contains?: T[K] extends string ? string : never;
+    startswith?: T[K] extends string ? string : never;
+    endswith?: T[K] extends string ? string : never;
+  };
+};
+
+/**
+ * Expanded entity with nested query options
+ *
+ * @example
+ * const expands = [{
+ *   field: "c_bpartner",
+ *   select: ["Name", "Email"],
+ *   filter: "IsActive eq true"
+ * }];
+ */
+export interface ExpandOptions {
+  field: string;
+  select?: string[];
+  filter?: string;
+  orderBy?: string;
+  top?: number;
+  skip?: number;
+  customJoinKey?: string;
 }
 
 // =============================================================================
@@ -162,6 +302,43 @@ export interface QueryRequest extends PaginationParams {
 /**
  * iDempiere OData-style query response wrapper
  * Based on: https://bxservice.github.io/idempiere-rest-docs/docs/api-guides/crud-operations/querying-data
+ *
+ * @example
+ * // Response from GET /api/v1/models/c_bpartner
+ * const response: ODataResponse<BusinessPartner> = {
+ *   records: [...],
+ *   "page-count": 1,
+ *   "records-size": 3,
+ *   "skip-records": 0,
+ *   "row-count": 1,
+ *   "array-count": 1
+ * };
+ *
+ * @example
+ * // Response with SQL tracing (showsql parameter)
+ * const responseWithSql: ODataResponse<BusinessPartner> = {
+ *   records: [...],
+ *   "page-count": 1,
+ *   "records-size": 1,
+ *   "skip-records": 0,
+ *   "row-count": 1,
+ *   "array-count": 1,
+ *   "sql-command": "SELECT ... FROM C_BPartner WHERE ..."
+ * };
+ *
+ * @example
+ * // Response with labels (showlabel parameter)
+ * const responseWithLabels: ODataResponse<BusinessPartner> = {
+ *   records: [...],
+ *   "page-count": 1,
+ *   "records-size": 1,
+ *   "skip-records": 0,
+ *   "row-count": 1,
+ *   "array-count": 1,
+ *   "assigned-labels": [
+ *     { Name: "#Customer", Description: "Customers" }
+ *   ]
+ * };
  */
 export interface ODataResponse<T> {
   /** Array of records */
@@ -178,6 +355,8 @@ export interface ODataResponse<T> {
   "array-count"?: number;
   /** Optional: SQL command (when showsql is enabled) */
   "sql-command"?: string;
+  /** Optional: Multiple SQL commands for expanded entities */
+  [key: `sql-command-${string}`]?: string;
   /** Optional: Assigned labels (when showlabel is enabled) */
   "assigned-labels"?: Array<{ Name: string; Description?: string }>;
 }

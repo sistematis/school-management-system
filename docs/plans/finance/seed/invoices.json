@@ -1,0 +1,87 @@
+[
+  {
+    "studentId": "STU-001",
+    "invoiceType": "Tuition Fee",
+    "invoiceDate": "2024-07-15",
+    "dueDate": "2024-08-15",
+    "description": "Tuition fee for Semester 1 2024/2025",
+    "invoiceLines": [
+      {
+        "lineType": "Tuition Fee",
+        "description": "Tuition Fee",
+        "quantity": 1,
+        "unitPrice": 2500000,
+        "taxRate": 0,
+        "amount": 2500000
+      }
+    ]
+  },
+  {
+    "studentId": "STU-002",
+    "invoiceType": "Tuition Fee",
+    "invoiceDate": "2024-07-15",
+    "dueDate": "2024-08-15",
+    "description": "Tuition fee for Semester 1 2024/2025",
+    "invoiceLines": [
+      {
+        "lineType": "Tuition Fee",
+        "description": "Tuition Fee",
+        "quantity": 1,
+        "unitPrice": 2500000,
+        "taxRate": 0,
+        "amount": 2500000
+      }
+    ]
+  },
+  {
+    "studentId": "STU-001",
+    "invoiceType": "Admission Fee",
+    "invoiceDate": "2024-07-01",
+    "dueDate": "2024-07-31",
+    "description": "One-time admission fee for new student",
+    "invoiceLines": [
+      {
+        "lineType": "Admission Fee",
+        "description": "Admission Fee",
+        "quantity": 1,
+        "unitPrice": 5000000,
+        "taxRate": 0,
+        "amount": 5000000
+      }
+    ]
+  },
+  {
+    "studentId": "STU-003",
+    "invoiceType": "Book Fee",
+    "invoiceDate": "2024-07-15",
+    "dueDate": "2024-08-15",
+    "description": "Textbook fee for Semester 1 2024/2025",
+    "invoiceLines": [
+      {
+        "lineType": "Book Fee",
+        "description": "Textbooks",
+        "quantity": 1,
+        "unitPrice": 750000,
+        "taxRate": 0,
+        "amount": 750000
+      }
+    ]
+  },
+  {
+    "studentId": "STU-004",
+    "invoiceType": "Tuition Fee",
+    "invoiceDate": "2024-07-15",
+    "dueDate": "2024-08-15",
+    "description": "Tuition fee for Semester 1 2024/2025",
+    "invoiceLines": [
+      {
+        "lineType": "Tuition Fee",
+        "description": "Tuition Fee",
+        "quantity": 1,
+        "unitPrice": 2500000,
+        "taxRate": 0,
+        "amount": 2500000
+      }
+    ]
+  }
+]

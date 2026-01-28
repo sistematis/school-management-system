@@ -1,0 +1,76 @@
+[
+  {
+    "studentId": "STU-001",
+    "paymentDate": "2024-08-01",
+    "amount": 2500000,
+    "paymentMethod": "Bank Transfer",
+    "bankAccount": "BCA 1234567890",
+    "reference": "TRX-12345",
+    "invoices": [
+      {
+        "invoiceId": "INV-001",
+        "allocatedAmount": 2500000
+      }
+    ]
+  },
+  {
+    "studentId": "STU-002",
+    "paymentDate": "2024-07-20",
+    "amount": 5000000,
+    "paymentMethod": "Bank Transfer",
+    "bankAccount": "BCA 1234567890",
+    "reference": "TRX-12346",
+    "invoices": [
+      {
+        "invoiceId": "INV-002",
+        "allocatedAmount": 2500000
+      },
+      {
+        "invoiceId": "INV-003",
+        "allocatedAmount": 2500000
+      }
+    ]
+  },
+  {
+    "studentId": "STU-003",
+    "paymentDate": "2024-08-05",
+    "amount": 750000,
+    "paymentMethod": "Cash",
+    "bankAccount": null,
+    "reference": "CASH-001",
+    "invoices": [
+      {
+        "invoiceId": "INV-004",
+        "allocatedAmount": 750000
+      }
+    ]
+  },
+  {
+    "studentId": "STU-001",
+    "paymentDate": "2024-07-05",
+    "amount": 5000000,
+    "paymentMethod": "Bank Transfer",
+    "bankAccount": "BCA 1234567890",
+    "reference": "TRX-12347",
+    "invoices": [
+      {
+        "invoiceId": "INV-005",
+        "allocatedAmount": 5000000
+      }
+    ]
+  },
+  {
+    "studentId": "STU-004",
+    "paymentDate": "2024-08-10",
+    "amount": 1250000,
+    "paymentMethod": "Bank Transfer",
+    "bankAccount": "BCA 1234567890",
+    "reference": "TRX-12348",
+    "invoices": [
+      {
+        "invoiceId": "INV-006",
+        "allocatedAmount": 1250000
+      }
+    ]
+  }
+]

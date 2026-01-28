@@ -1,0 +1,35 @@
+[
+  {
+    "employeeId": "EMP-001",
+    "leaveType": "Annual",
+    "fromDate": "2024-09-01",
+    "toDate": "2024-09-05",
+    "totalDays": 5,
+    "reason": "Family vacation",
+    "substituteEmployeeId": "EMP-002",
+    "contactAddress": "Home address",
+    "contactPhone": "08123456789"
+  },
+  {
+    "employeeId": "EMP-002",
+    "leaveType": "Sick",
+    "fromDate": "2024-08-15",
+    "toDate": "2024-08-16",
+    "totalDays": 2,
+    "reason": "Medical treatment",
+    "substituteEmployeeId": "EMP-003",
+    "contactAddress": "Home address",
+    "contactPhone": "08123456780"
+  },
+  {
+    "employeeId": "EMP-004",
+    "leaveType": "Personal",
+    "fromDate": "2024-08-20",
+    "toDate": "2024-08-20",
+    "totalDays": 1,
+    "reason": "Family matter",
+    "substituteEmployeeId": "EMP-005",
+    "contactAddress": "Home address",
+    "contactPhone": "08123456782"
+  }
+]
