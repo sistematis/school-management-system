@@ -69,4 +69,43 @@ describe("buildODataFilter", () => {
     const result = buildODataFilter([], {});
     expect(result).toBeNull();
   });
+
+  it("should build startswith filter", () => {
+    const metadata = {
+      Name: {
+        label: "Name",
+        type: "string" as const,
+        operators: ["startswith"] as const,
+      },
+    };
+    const filters = [{ field: "Name", operator: "startswith" as const, value: "Jo" }];
+    const result = buildODataFilter(filters, metadata);
+    expect(result).toBe("startswith(Name,'Jo')");
+  });
+
+  it("should build endswith filter", () => {
+    const metadata = {
+      Name: {
+        label: "Name",
+        type: "string" as const,
+        operators: ["endswith"] as const,
+      },
+    };
+    const filters = [{ field: "Name", operator: "endswith" as const, value: "son" }];
+    const result = buildODataFilter(filters, metadata);
+    expect(result).toBe("endswith(Name,'son')");
+  });
+
+  it("should build multi-select with OR logic", () => {
+    const metadata = {
+      GradeLevel: {
+        label: "Grade",
+        type: "enum" as const,
+        operators: ["eq"] as const,
+      },
+    };
+    const filters = [{ field: "GradeLevel", operator: "eq" as const, value: ["9", "10"] }];
+    const result = buildODataFilter(filters, metadata);
+    expect(result).toBe("(GradeLevel eq '9' or GradeLevel eq '10')");
+  });
 });
