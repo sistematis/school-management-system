@@ -163,8 +163,22 @@ export interface QueryFilter {
   /** Field/column name */
   column: string;
   /** Logical operator */
-  operator: "eq" | "neq" | "in" | "gt" | "ge" | "lt" | "le" | "and" | "or" | "not"
-    | "contains" | "startswith" | "endswith" | "tolower" | "toupper";
+  operator:
+    | "eq"
+    | "neq"
+    | "in"
+    | "gt"
+    | "ge"
+    | "lt"
+    | "le"
+    | "and"
+    | "or"
+    | "not"
+    | "contains"
+    | "startswith"
+    | "endswith"
+    | "tolower"
+    | "toupper";
   /** Filter value */
   value: string | number | boolean | Array<string | number>;
 }
@@ -224,25 +238,25 @@ export interface ODataQueryParams {
  * Common filter operators for type-safe filter creation
  */
 export type FilterOperator =
-  | "eq"    // equals (=)
-  | "neq"   // not equals (!=)
-  | "gt"    // greater than (>)
-  | "ge"    // greater or equal (>=)
-  | "lt"    // less than (<)
-  | "le"    // less or equal (<=)
-  | "and"   // logical AND
-  | "or"    // logical OR
-  | "not";  // logical NOT
+  | "eq" // equals (=)
+  | "neq" // not equals (!=)
+  | "gt" // greater than (>)
+  | "ge" // greater or equal (>=)
+  | "lt" // less than (<)
+  | "le" // less or equal (<=)
+  | "and" // logical AND
+  | "or" // logical OR
+  | "not"; // logical NOT
 
 /**
  * Method filter operators for string operations
  */
 export type MethodFilterOperator =
-  | "contains"    // contains substring
-  | "startswith"  // starts with prefix
-  | "endswith"    // ends with suffix
-  | "tolower"     // convert to lowercase
-  | "toupper";    // convert to uppercase
+  | "contains" // contains substring
+  | "startswith" // starts with prefix
+  | "endswith" // ends with suffix
+  | "tolower" // convert to lowercase
+  | "toupper"; // convert to uppercase
 
 /**
  * Sort direction
@@ -355,10 +369,8 @@ export interface ODataResponse<T> {
   "array-count"?: number;
   /** Optional: SQL command (when showsql is enabled) */
   "sql-command"?: string;
-  /** Optional: Multiple SQL commands for expanded entities */
-  [key: `sql-command-${string}`]?: string;
-  /** Optional: Assigned labels (when showlabel is enabled) */
-  "assigned-labels"?: Array<{ Name: string; Description?: string }>;
+  /** Optional: Additional dynamic properties */
+  [key: string]: T | T[] | number | string | undefined | Array<{ Name: string; Description?: string }>;
 }
 
 /**

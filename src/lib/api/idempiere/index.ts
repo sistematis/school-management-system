@@ -14,8 +14,58 @@
 // Client
 // Error
 export { getIdempiereClient, IdempiereApiError, IdempiereClient } from "./client";
+// Common Types (NEW - universal/mandatory fields)
+export type {
+  ADOrgId,
+  AdClientId,
+  ApiResponse,
+  AuthCompleteResponse,
+  AuthFinalizeRequest,
+  AuthLoginFullRequest,
+  AuthLoginRequest,
+  AuthLoginResponse,
+  AuthLogoutRequest,
+  AuthLogoutResponse,
+  AuthOption,
+  AuthRefreshRequest,
+  AuthRefreshResponse,
+  CreatedBy,
+  FilterOperator,
+  IdempiereBaseEntity,
+  IdempiereError,
+  MethodFilterOperator,
+  ODataQueryParams,
+  ODataResponse,
+  ODataSingleResponse,
+  PaginatedResponse,
+  PaginationParams,
+  SortDirection,
+  UpdatedBy,
+} from "./common.types";
 // Config
 export { BP_GROUP_STUDENTS, IDEMPIERE_CONFIG, IDEMPIERE_TABLES } from "./config";
+// Models (NEW - organized by entity)
+export type {
+  AAsset,
+  AAssetCreate,
+  AAssetResponse,
+  ADUser,
+  ADUserCreate,
+  ADUserExpanded,
+  ADUserResponse,
+  CBPartner,
+  CBPartnerCreate,
+  CBPartnerResponse,
+  CInvoice,
+  CInvoiceCreate,
+  CInvoiceResponse,
+  CPayment,
+  CPaymentCreate,
+  CPaymentResponse,
+  MProduct,
+  MProductCreate,
+  MProductResponse,
+} from "./models";
 export type {
   BuiltQuery,
   CompoundFilter,
@@ -62,49 +112,23 @@ export {
   transformProductToLibraryBook,
   transformStudentToBPartner,
 } from "./transformers";
-// Types
+// School Management Specific Types (backward compatibility - deprecated)
+// Import from types.ts for domain-specific transformed types
+// Backward compatibility aliases (deprecated - use new types instead)
 export type {
-  ADUser,
-  ApiResponse,
-  Asset,
+  Asset as AssetDeprecated,
   AssetCondition,
-  AuthCompleteResponse,
-  AuthFinalizeRequest,
-  AuthLoginFullRequest,
-  // Authentication
-  AuthLoginRequest,
-  AuthLoginResponse,
-  AuthLogoutRequest,
-  AuthLogoutResponse,
-  AuthOption,
-  AuthRefreshRequest,
-  AuthRefreshResponse,
   BookStatus,
-  // Entities
-  BusinessPartner,
-  // Errors
-  IdempiereError,
-  Invoice,
+  BusinessPartner as BPartnerDeprecated,
+  Invoice as InvoiceDeprecated,
   InvoiceItem,
   InvoiceStatus,
   LibraryBook,
-  // OData-style
-  ODataResponse,
-  ODataSingleResponse,
-  ODataQueryParams,
-  // Common
-  ExpandOptions,
-  FilterOperator,
-  MethodFilterOperator,
-  PaginationParams,
-  Payment,
+  Payment as PaymentDeprecated,
   PaymentMethod,
-  Product,
-  SortDirection,
+  Product as ProductDeprecated,
   SchoolAsset,
   SchoolInvoice,
   SchoolPayment,
-  // School Management
   Student,
-  TypedFilter,
 } from "./types";
