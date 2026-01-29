@@ -53,7 +53,11 @@ export function DataTable({ data: initialData }: { data: z.infer<typeof sectionS
           <TabsTrigger value="focus-documents">Focus Documents</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
-          <DataTableViewOptions table={table} />
+          <DataTableViewOptions
+            table={table}
+            columnVisibility={table.getState().columnVisibility}
+            onVisibilityChange={(columnId) => table.getColumn(columnId)?.toggleVisibility()}
+          />
           <Button variant="outline" size="sm">
             <Plus />
             <span className="hidden lg:inline">Add Section</span>
@@ -64,7 +68,14 @@ export function DataTable({ data: initialData }: { data: z.infer<typeof sectionS
         <div className="overflow-hidden rounded-lg border">
           <DataTableNew dndEnabled table={table} columns={columns} onReorder={setData} />
         </div>
-        <DataTablePagination table={table} />
+        <DataTablePagination
+          table={table}
+          pageSize={table.getState().pagination.pageSize}
+          currentPage={table.getState().pagination.pageIndex + 1}
+          totalPages={table.getPageCount()}
+          onPageSizeChange={(size) => table.setPageSize(size)}
+          onPageChange={(page) => table.setPageIndex(page - 1)}
+        />
       </TabsContent>
       <TabsContent value="past-performance" className="flex flex-col">
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed" />

@@ -28,7 +28,11 @@ export function TableCards() {
           <CardDescription>Track and manage your latest leads and their status.</CardDescription>
           <CardAction>
             <div className="flex items-center gap-2">
-              <DataTableViewOptions table={table} />
+              <DataTableViewOptions
+                table={table}
+                columnVisibility={table.getState().columnVisibility}
+                onVisibilityChange={(columnId) => table.getColumn(columnId)?.toggleVisibility()}
+              />
               <Button variant="outline" size="sm">
                 <Download />
                 <span className="hidden lg:inline">Export</span>
@@ -40,7 +44,14 @@ export function TableCards() {
           <div className="overflow-hidden rounded-md border">
             <DataTable table={table} columns={recentLeadsColumns} />
           </div>
-          <DataTablePagination table={table} />
+          <DataTablePagination
+            table={table}
+            pageSize={table.getState().pagination.pageSize}
+            currentPage={table.getState().pagination.pageIndex + 1}
+            totalPages={table.getPageCount()}
+            onPageSizeChange={(size) => table.setPageSize(size)}
+            onPageChange={(page) => table.setPageIndex(page - 1)}
+          />
         </CardContent>
       </Card>
     </div>

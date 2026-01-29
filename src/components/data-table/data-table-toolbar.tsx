@@ -42,7 +42,7 @@ export function DataTableToolbar<TData>({
 
   // Local state for immediate input updates (prevents focus loss)
   const [localSearchValue, setLocalSearchValue] = useState(searchValue);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectionRef = useRef<{ start: number; end: number } | null>(null);
 
