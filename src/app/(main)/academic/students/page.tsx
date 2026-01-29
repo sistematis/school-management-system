@@ -15,7 +15,9 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableStats } from "@/components/data-table/data-table-stats";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { StudentDetailDrawer } from "@/components/students";
 import { Button } from "@/components/ui/button";
+import type { CBPartner } from "@/lib/api/idempiere/models/c-bpartner";
 import { studentFilterSchema } from "@/lib/api/idempiere/models/c-bpartner";
 import { useODataQuery } from "@/lib/data-table/use-odata-query";
 import { useTanStackTable } from "@/lib/data-table/use-tanstack-table";
@@ -33,6 +35,12 @@ const PAGE_SIZE = 10;
  */
 export default function StudentsPage() {
   const router = useRouter();
+
+  // Drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [studentDetails, setStudentDetails] = useState<CBPartner | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
   // Current page state
   const [currentPage, setCurrentPage] = useState(1);
@@ -100,10 +108,78 @@ export default function StudentsPage() {
     }));
   }, []);
 
+  // View details handler - fetch student details with expanded relations
+  const handleViewDetails = useCallback(async (studentId: string) => {
+    setSelectedStudentId(studentId);
+    setDrawerOpen(true);
+    setIsLoadingDetails(true);
+
+    try {
+      const { getBusinessPartnerService } = await import("@/lib/api/idempiere/services/business-partner.service");
+      const service = getBusinessPartnerService();
+
+      // Convert string ID to number for API call
+      const details = await service.getStudentByIdWithExpand(Number(studentId));
+
+      if (details) {
+        // Set student details directly (already has id: number)
+        setStudentDetails(details as unknown as CBPartner);
+      } else {
+        setStudentDetails(null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch student details:", error);
+      setStudentDetails(null);
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  }, []);
+
+  // Edit student handler
+  const handleEditStudent = useCallback(
+    (studentId: string) => {
+      router.push(`/academic/students/${studentId}/edit`);
+    },
+    [router],
+  );
+
+  // Delete student handler
+  const handleDeleteStudent = useCallback(async (studentId: string) => {
+    if (!confirm("Are you sure you want to delete this student?")) return;
+
+    try {
+      const { getBusinessPartnerService } = await import("@/lib/api/idempiere/services/business-partner.service");
+      const service = getBusinessPartnerService();
+
+      const success = await service.deleteStudent(Number(studentId));
+
+      if (success) {
+        // Refresh the table data by refetching
+        window.location.reload();
+      } else {
+        alert("Failed to delete student");
+      }
+    } catch (error) {
+      console.error("Failed to delete student:", error);
+      alert("Failed to delete student");
+    }
+  }, []);
+
+  // Drawer close handler
+  const handleDrawerClose = useCallback(() => {
+    setDrawerOpen(false);
+    // Clear data after animation
+    setTimeout(() => {
+      setSelectedStudentId(null);
+      setStudentDetails(null);
+    }, 300);
+  }, []);
+
   // Memoize columns to prevent table recreation on every render
   const memoizedColumns = useMemo(
-    () => getStudentColumns(handleSortChange, handleHideColumn),
-    [handleSortChange, handleHideColumn],
+    () =>
+      getStudentColumns(handleSortChange, handleHideColumn, handleViewDetails, handleEditStudent, handleDeleteStudent),
+    [handleSortChange, handleHideColumn, handleViewDetails, handleEditStudent, handleDeleteStudent],
   );
 
   // Build table state object - memoized to prevent unnecessary table recreation
@@ -269,6 +345,14 @@ export default function StudentsPage() {
           />
         </div>
       </div>
+
+      {/* Student Detail Drawer */}
+      <StudentDetailDrawer
+        open={drawerOpen}
+        onOpenChange={handleDrawerClose}
+        student={studentDetails}
+        isLoading={isLoadingDetails}
+      />
     </div>
   );
 }

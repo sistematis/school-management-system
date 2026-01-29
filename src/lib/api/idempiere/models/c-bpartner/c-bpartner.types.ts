@@ -31,6 +31,91 @@ export interface Socreditstatus {
 }
 
 // =============================================================================
+// Related Entity Types (for expanded queries)
+// =============================================================================
+
+/**
+ * C_BPartner_Location entity
+ * Location/Address untuk Business Partner
+ */
+export interface CBPartnerLocation {
+  id: number;
+  uid: string;
+  C_Location_ID: CLocation;
+  Name: string;
+  IsBillTo: boolean;
+  IsShipTo: boolean;
+  IsPayFrom: boolean;
+  IsRemitTo: boolean;
+  IsActive: boolean;
+}
+
+/**
+ * C_Location entity (nested dalam C_BPartner_Location)
+ */
+export interface CLocation {
+  id: number;
+  uid?: string;
+  identifier: string; // Pre-formatted full address from iDempiere
+  Address1: string;
+  Address2?: string;
+  Address3?: string;
+  Address4?: string;
+  City: string;
+  C_Country_ID: CCountry;
+  Postal?: string;
+  Region?: string;
+}
+
+/**
+ * C_Country reference (nested dalam C_Location)
+ */
+export interface CCountry {
+  id: number;
+  identifier: string;
+  "model-name": string;
+}
+
+/**
+ * C_BP_BankAccount entity
+ * Rekening bank untuk Business Partner
+ */
+export interface CBPBankAccount {
+  id: number;
+  uid: string;
+  AD_User_ID?: {
+    id: number;
+    identifier: string;
+    "model-name": string;
+  };
+  A_Name: string;
+  A_Address?: string;
+  A_City?: string;
+  A_Zip?: string;
+  A_Country?: string;
+  A_EMail?: string;
+  A_Phone?: string;
+  BankAccount?: string;
+  CreditCardNumber?: string;
+  CreditCardExpMM: number;
+  CreditCardExpYY: number;
+  CreditCardType?: {
+    propertyLabel: string;
+    id: string;
+    identifier: string;
+    "model-name": string;
+  };
+  BPBankAcctUse?: {
+    propertyLabel: string;
+    id: string;
+    identifier: string;
+    "model-name": string;
+  };
+  IsACH: boolean;
+  IsActive: boolean;
+}
+
+// =============================================================================
 // Main Entity Types
 // =============================================================================
 
@@ -72,7 +157,10 @@ export interface CBPartner extends IdempiereBaseEntity {
   IsManufacturer: boolean;
   Is1099Vendor: boolean;
   "model-name": string;
+  // Expanded relations (for detail view with $expand)
   ad_user?: ADUser[];
+  c_bp_bankaccount?: CBPBankAccount[];
+  c_bpartner_location?: CBPartnerLocation[];
   // Custom fields for school management
   parentContact?: string;
   emergencyContact?: string;

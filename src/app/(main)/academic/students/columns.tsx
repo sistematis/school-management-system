@@ -27,6 +27,9 @@ import { cn } from "@/lib/utils";
 export function getStudentColumns(
   onSortChange?: (columnId: string, desc: boolean) => void,
   onHideClick?: (columnId: string) => void,
+  onViewDetails?: (studentId: string) => void,
+  onEditStudent?: (studentId: string) => void,
+  onDeleteStudent?: (studentId: string) => void,
 ): ColumnDef<Student>[] {
   return [
     // Selection checkbox
@@ -128,10 +131,12 @@ export function getStudentColumns(
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => navigator.clipboard.writeText(student.id)}>Copy ID</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>View details</DropdownMenuItem>
-              <DropdownMenuItem>Edit student</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onViewDetails?.(student.id)}>View details</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEditStudent?.(student.id)}>Edit student</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600" onClick={() => onDeleteStudent?.(student.id)}>
+                Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );

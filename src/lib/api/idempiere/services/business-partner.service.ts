@@ -326,6 +326,27 @@ export class BusinessPartnerService extends IdempiereBaseService<BusinessPartner
   }
 
   /**
+   * Get student details with expanded relations (contacts, locations, bank accounts)
+   * @param bpartnerId - C_BPartner_ID
+   * @returns BusinessPartner with expanded data or null if not found
+   *
+   * @example
+   * const studentDetails = await service.getStudentByIdWithExpand(1000008);
+   * // Returns student with ad_user[], c_bp_bankaccount[], c_bpartner_location[]
+   */
+  async getStudentByIdWithExpand(bpartnerId: number): Promise<BusinessPartner | null> {
+    try {
+      const response = await this.client.get<BusinessPartner>(`${this.endpoint}/${bpartnerId}`, {
+        $expand: "ad_user,c_bpartner_location,c_bp_bankaccount",
+      });
+      return response;
+    } catch (error) {
+      console.error(`Failed to fetch ${this.endpoint}/${bpartnerId} with expand:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Get a single student by Value (search key)
    * @param value - Value field (e.g., "10A-001")
    * @returns Student or null if not found
