@@ -27,8 +27,6 @@ function toStudent(bpartner: CBPartner): Student {
     name: bpartner.Name,
     name2: bpartner.Name2,
     email: bpartner.EMail,
-    phone: bpartner.Phone,
-    phone2: bpartner.Phone2,
     isActive: bpartner.IsActive,
     isCustomer: bpartner.IsCustomer,
     adLanguage: (bpartner as any).AD_Language_ID?.identifier || (bpartner as any).Ad_Language,
@@ -73,7 +71,6 @@ export function useStudents({ queryParams, enabled = true }: UseStudentsOptions 
       const response = await client.query<ODataResponse<CBPartner>>("/models/C_BPartner", params);
 
       const records = response.records ?? [];
-
       // Transform C_BPartner to Student
       return {
         records: records.map(toStudent),
@@ -91,16 +88,11 @@ export function useStudents({ queryParams, enabled = true }: UseStudentsOptions 
 export interface StudentStats {
   total: number;
   active: number;
-  grade9: number;
-  grade10: number;
-  grade11: number;
-  grade12: number;
-  grades11_12: number;
 }
 
 /**
  * Fetch student stats with filter support
- * Returns counts for: Total, Active, by Grade
+ * Returns counts for: Total, Active
  */
 export function useStudentStats(filter?: string) {
   const isAuthenticated = useIdempiereAuth((state) => state.isAuthenticated);
@@ -115,8 +107,8 @@ export function useStudentStats(filter?: string) {
 
       const client = getIdempiereClient();
 
-      // For each stat, query with appropriate filter
-      const [totalResult, activeResult, grade9Result, grade10Result, grade11Result, grade12Result] = await Promise.all([
+      // Query total and active stats in parallel
+      const [totalResult, activeResult] = await Promise.all([
         // Total students
         client.query<ODataResponse<CBPartner>>(
           "/models/C_BPartner",
@@ -127,36 +119,11 @@ export function useStudentStats(filter?: string) {
           $filter: filter ? `${filter} and IsActive eq true` : "IsActive eq true",
           $top: 0,
         }),
-        // Grade 9 (custom field - adjust field name as needed)
-        client.query<ODataResponse<CBPartner>>("/models/C_BPartner", {
-          $filter: filter ? `${filter} and GradeLevel eq '9'` : "GradeLevel eq '9'",
-          $top: 0,
-        }),
-        // Grade 10
-        client.query<ODataResponse<CBPartner>>("/models/C_BPartner", {
-          $filter: filter ? `${filter} and GradeLevel eq '10'` : "GradeLevel eq '10'",
-          $top: 0,
-        }),
-        // Grade 11
-        client.query<ODataResponse<CBPartner>>("/models/C_BPartner", {
-          $filter: filter ? `${filter} and GradeLevel eq '11'` : "GradeLevel eq '11'",
-          $top: 0,
-        }),
-        // Grade 12
-        client.query<ODataResponse<CBPartner>>("/models/C_BPartner", {
-          $filter: filter ? `${filter} and GradeLevel eq '12'` : "GradeLevel eq '12'",
-          $top: 0,
-        }),
       ]);
 
       return {
         total: totalResult["row-count"] ?? 0,
         active: activeResult["row-count"] ?? 0,
-        grade9: grade9Result["row-count"] ?? 0,
-        grade10: grade10Result["row-count"] ?? 0,
-        grade11: grade11Result["row-count"] ?? 0,
-        grade12: grade12Result["row-count"] ?? 0,
-        grades11_12: (grade11Result["row-count"] ?? 0) + (grade12Result["row-count"] ?? 0),
       };
     },
     enabled: isAuthenticated,

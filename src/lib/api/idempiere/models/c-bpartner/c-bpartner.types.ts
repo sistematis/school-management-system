@@ -46,9 +46,6 @@ export interface CBPartner extends IdempiereBaseEntity {
   Name2?: string;
   Description?: string;
   EMail?: string;
-  Phone?: string;
-  Phone2?: string;
-  Fax?: string;
   Birthday?: string; // ISO date string
   SalesRep_ID?: number;
   C_BP_Group_ID: CBPGroupId;

@@ -11,11 +11,8 @@ export interface Student {
   name: string; // Name
   name2?: string; // Name2
   email?: string; // EMail
-  phone?: string; // Phone
-  phone2?: string; // Phone2
   isActive: boolean; // IsActive
   isCustomer: boolean; // IsCustomer
-  gradeLevel?: string; // Custom field (GradeLevel)
   adLanguage?: string; // Ad_Language
   birthday?: string; // Birthday (ISO date)
 

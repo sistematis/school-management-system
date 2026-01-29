@@ -56,12 +56,12 @@ export const studentColumns: ColumnDef<Student>[] = [
       const student = row.original;
       return (
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary text-sm">
             {student.name.charAt(0).toUpperCase()}
           </div>
           <div className="flex flex-col">
             <span className="font-medium">{student.name}</span>
-            {student.email && <span className="text-xs text-muted-foreground">{student.email}</span>}
+            {student.email && <span className="text-muted-foreground text-xs">{student.email}</span>}
           </div>
         </div>
       );
@@ -72,7 +72,7 @@ export const studentColumns: ColumnDef<Student>[] = [
   {
     accessorKey: "value",
     header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-    cell: ({ row }) => <span className="font-mono text-sm text-muted-foreground">{row.original.value}</span>,
+    cell: ({ row }) => <span className="font-mono text-muted-foreground text-sm">{row.original.value}</span>,
   },
 
   // Status Badge
@@ -96,13 +96,6 @@ export const studentColumns: ColumnDef<Student>[] = [
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
-  },
-
-  // Phone
-  {
-    accessorKey: "phone",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Phone" />,
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.phone || "—"}</span>,
   },
 
   // Actions dropdown
