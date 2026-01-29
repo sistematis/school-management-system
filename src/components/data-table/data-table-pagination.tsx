@@ -46,11 +46,15 @@ export function DataTablePagination<TData>({
           <Select
             value={`${pageSize}`}
             onValueChange={(value) => {
-              onPageSizeChange(Number(value));
+              const newSize = Number(value);
+              // Only trigger change if the size is actually different
+              if (newSize !== pageSize) {
+                onPageSizeChange(newSize);
+              }
             }}
           >
             <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-              <SelectValue placeholder={pageSize} />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent side="top">
               {[10, 20, 30, 40, 50].map((size) => (

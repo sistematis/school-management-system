@@ -1,7 +1,6 @@
 "use client";
-"use no memo";
 
-import type { Table } from "@tanstack/react-table";
+import type { Table, VisibilityState } from "@tanstack/react-table";
 import { Settings2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,9 +15,15 @@ import {
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;
+  columnVisibility: VisibilityState;
+  onVisibilityChange?: (columnId: string, value: boolean) => void;
 }
 
-export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
+export function DataTableViewOptions<TData>({
+  table,
+  columnVisibility,
+  onVisibilityChange,
+}: DataTableViewOptionsProps<TData>) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -34,12 +39,19 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           .getAllColumns()
           .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
           .map((column) => {
+            // Check visibility from React state, defaulting to true (visible)
+            const isVisible = columnVisibility[column.id] !== false;
             return (
               <DropdownMenuCheckboxItem
                 key={column.id}
                 className="capitalize"
-                checked={column.getIsVisible()}
-                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                checked={isVisible}
+                onCheckedChange={(value) => {
+                  // Only update parent state - let useEffect handle syncing to TanStack Table
+                  if (onVisibilityChange) {
+                    onVisibilityChange(column.id, !!value);
+                  }
+                }}
               >
                 {column.id}
               </DropdownMenuCheckboxItem>

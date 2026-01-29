@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { Table } from "@tanstack/react-table";
+import type { Table, VisibilityState } from "@tanstack/react-table";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ export interface DataTableToolbarProps<TData> {
   searchableField?: string;
   searchValue: string;
   onSearchChange: (value: string) => void;
+  columnVisibility?: VisibilityState;
+  onColumnVisibilityChange?: (columnId: string, value: boolean) => void;
 }
 
 export function DataTableToolbar<TData>({
@@ -30,6 +32,8 @@ export function DataTableToolbar<TData>({
   searchableField,
   searchValue,
   onSearchChange,
+  columnVisibility,
+  onColumnVisibilityChange,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = activeFilters.length > 0;
 
@@ -60,7 +64,11 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-      <DataTableViewOptions table={table} />
+      <DataTableViewOptions
+        table={table}
+        columnVisibility={columnVisibility || {}}
+        onVisibilityChange={onColumnVisibilityChange}
+      />
     </div>
   );
 }

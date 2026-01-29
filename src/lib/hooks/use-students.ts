@@ -81,7 +81,8 @@ export function useStudents({ queryParams, enabled = true }: UseStudentsOptions 
       };
     },
     enabled: isAuthenticated && enabled,
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 0, // Always refetch when queryKey changes
+    gcTime: 0, // Don't cache data - immediately garbage collect
   });
 }
 

@@ -14,29 +14,29 @@ export function useTanStackTable<TData>({
   columns,
   pageCount,
   state,
-  onPaginationChange,
   onSortingChange,
-  onColumnVisibilityChange,
 }: {
   data: TData[];
   columns: ColumnDef<TData>[];
   pageCount: number;
   state?: { pagination?: PaginationState; sorting?: SortingState; columnVisibility?: VisibilityState };
-  onPaginationChange?: (updater: PaginationState | ((old: PaginationState) => PaginationState)) => void;
   onSortingChange?: (sorting: SortingState | ((old: SortingState) => SortingState)) => void;
-  onColumnVisibilityChange?: (visibility: VisibilityState | ((old: VisibilityState) => VisibilityState)) => void;
 }) {
+  // Do NOT memoize options - TanStack Table handles this internally with its own memoization
+  // Memoizing can prevent proper updates when data or state changes
   return useReactTable({
     data,
     columns,
     pageCount,
     state,
-    onPaginationChange,
     onSortingChange,
-    onColumnVisibilityChange,
     getCoreRowModel: getCoreRowModel(),
-    manualPagination: true, // We handle pagination on the server
-    manualSorting: true, // We handle sorting on the server
+    manualPagination: true,
+    manualSorting: true,
     enableColumnResizing: false,
+    enableHiding: true,
+    debugTable: false,
+    debugHeaders: false,
+    debugColumns: false,
   });
 }

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -22,7 +22,7 @@ import { useTanStackTable } from "@/lib/data-table/use-tanstack-table";
 import { useStudentStats, useStudents } from "@/lib/hooks/use-students";
 import type { Student } from "@/lib/types/students";
 
-import { studentColumns } from "./columns";
+import { getStudentColumns } from "./columns";
 
 /**
  * Page size for table pagination
@@ -31,12 +31,6 @@ const PAGE_SIZE = 10;
 
 /**
  * Students Page - Table view with dynamic filtering
- *
- * Features:
- * - Dynamic filters from C_BPartner model schema
- * - URL-synced filters (bookmarkable, shareable)
- * - Stats that reflect filtered data
- * - Server-side pagination with iDempiere OData
  */
 export default function StudentsPage() {
   const router = useRouter();
@@ -79,67 +73,81 @@ export default function StudentsPage() {
 
   // Calculate total pages from response
   const totalPages = studentsData?.totalPages || 1;
-  const totalRecords = studentsData?.totalRecords || 0;
 
-  // Transform response to table data
-  const tableData: Student[] = studentsData?.records || [];
+  // Transform response to table data - track studentsData changes to force re-render on new data
+  const tableData = useMemo(() => studentsData?.records || [], [studentsData]);
+
+  // Sorting handler - directly update the state with correct values
+  const handleSortChange = useCallback((columnId: string, desc: boolean) => {
+    console.log("[handleSortChange] Column:", columnId, "Desc:", desc);
+    setSorting([{ id: columnId, desc }]);
+  }, []);
+
+  // Column visibility handler - directly update the state with correct value
+  const handleColumnVisibilityChange = useCallback((columnId: string, value: boolean) => {
+    console.log("[handleColumnVisibilityChange] Column:", columnId, "Value:", value);
+    setColumnVisibility((old) => ({
+      ...old,
+      [columnId]: value,
+    }));
+  }, []);
+
+  // Column hide handler - hide a column by setting visibility to false
+  const handleHideColumn = useCallback((columnId: string) => {
+    console.log("[handleHideColumn] Column:", columnId);
+    setColumnVisibility((old) => ({
+      ...old,
+      [columnId]: false,
+    }));
+  }, []);
 
   // Memoize columns to prevent table recreation on every render
-  const memoizedColumns = useMemo(() => studentColumns, []);
-
-  // Pagination handler - syncs table state with component state
-  const handlePaginationChange = useCallback(
-    (updater: PaginationState | ((old: PaginationState) => PaginationState)) => {
-      // Since pagination is fully controlled by DataTablePagination callbacks,
-      // this handler is only for internal table state synchronization
-      // The actual state updates happen in the DataTablePagination callbacks
-      const newState = typeof updater === "function" ? updater({ pageIndex: currentPage - 1, pageSize }) : updater;
-      console.log("[Table Pagination Change - Internal Sync]", {
-        oldState: { pageIndex: currentPage - 1, pageSize },
-        newState,
-        note: "This should not happen - DataTablePagination handles all changes",
-      });
-      // Only update if table initiated the change (shouldn't happen with current setup)
-      setPageSize(newState.pageSize);
-      setCurrentPage(newState.pageIndex + 1);
-    },
-    [currentPage, pageSize],
+  const memoizedColumns = useMemo(
+    () => getStudentColumns(handleSortChange, handleHideColumn),
+    [handleSortChange, handleHideColumn],
   );
 
-  // Sorting and column visibility handlers (stable references)
-  const handleSortingChange = useCallback(
-    (newSorting: SortingState | ((old: SortingState) => SortingState)) => {
-      console.log("[Sorting Change]", { oldSorting: sorting, newSorting });
-      setSorting(newSorting);
-    },
-    [sorting],
+  // Build table state object - memoized to prevent unnecessary table recreation
+  const tableState = useMemo(
+    () => ({
+      pagination: {
+        pageIndex: currentPage - 1,
+        pageSize: pageSize,
+      } as PaginationState,
+      sorting,
+      columnVisibility,
+    }),
+    [currentPage, pageSize, sorting, columnVisibility],
   );
 
-  const handleColumnVisibilityChange = useCallback(
-    (newVisibility: VisibilityState | ((old: VisibilityState) => VisibilityState)) => {
-      console.log("[Column Visibility Change]", { oldVisibility: columnVisibility, newVisibility });
-      setColumnVisibility(newVisibility);
-    },
-    [columnVisibility],
-  );
-
-  // Build table with pagination handler for internal sync
+  // Build table
   const table = useTanStackTable({
     data: tableData,
     columns: memoizedColumns,
     pageCount: totalPages,
-    state: {
-      pagination: {
-        pageIndex: currentPage - 1,
-        pageSize: pageSize,
-      },
-      sorting,
-      columnVisibility,
-    },
-    onPaginationChange: handlePaginationChange,
-    onSortingChange: handleSortingChange,
-    onColumnVisibilityChange: handleColumnVisibilityChange,
+    state: tableState,
   });
+
+  // Sync column visibility with TanStack Table when it changes
+  useEffect(() => {
+    if (table && columnVisibility) {
+      // Update table's column visibility state
+      Object.entries(columnVisibility).forEach(([columnId, visible]) => {
+        const column = table.getColumn(columnId);
+        if (column) {
+          column.toggleVisibility(!!visible);
+        }
+      });
+      // Force table re-render by updating state
+      table.setOptions((prev) => ({
+        ...prev,
+        state: {
+          ...prev.state,
+          columnVisibility,
+        },
+      }));
+    }
+  }, [columnVisibility, table]);
 
   // Stats cards configuration
   const statCards = [
@@ -240,11 +248,22 @@ export default function StudentsPage() {
             searchableField="Name"
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
+            columnVisibility={columnVisibility}
+            onColumnVisibilityChange={handleColumnVisibilityChange}
           />
         </div>
 
         {/* Table Content */}
-        <DataTable table={table} columns={memoizedColumns} />
+        {/* key includes sorting and columnVisibility to ensure table updates */}
+        <DataTable
+          key={`table-${pageSize}-${sorting.map((s) => `${s.id}-${s.desc}`).join("-")}-${Object.entries(
+            columnVisibility,
+          )
+            .map(([k, v]) => `${k}-${v}`)
+            .join("-")}`}
+          table={table}
+          columns={memoizedColumns}
+        />
 
         {/* Pagination */}
         <div className="border-t p-4">
@@ -254,10 +273,12 @@ export default function StudentsPage() {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageSizeChange={(newPageSize) => {
+              console.log("[Pagination] onPageSizeChange:", { old: pageSize, new: newPageSize });
               setPageSize(newPageSize);
-              setCurrentPage(1); // Reset to first page when page size changes
+              setCurrentPage(1);
             }}
             onPageChange={(newPage) => {
+              console.log("[Pagination] onPageChange:", { old: currentPage, new: newPage });
               setCurrentPage(newPage);
             }}
           />
