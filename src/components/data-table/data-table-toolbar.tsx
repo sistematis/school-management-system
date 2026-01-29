@@ -2,6 +2,8 @@
 
 "use client";
 
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+
 import type { Table, VisibilityState } from "@tanstack/react-table";
 import { X } from "lucide-react";
 
@@ -36,18 +38,87 @@ export function DataTableToolbar<TData>({
   onColumnVisibilityChange,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = activeFilters.length > 0;
+  const [_isPending, startTransition] = useTransition();
+
+  // Local state for immediate input updates (prevents focus loss)
+  const [localSearchValue, setLocalSearchValue] = useState(searchValue);
+  const debounceRef = useRef<NodeJS.Timeout>();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const selectionRef = useRef<{ start: number; end: number } | null>(null);
+
+  // Save cursor position before URL update
+  const saveSelection = useCallback(() => {
+    if (inputRef.current) {
+      selectionRef.current = {
+        start: inputRef.current.selectionStart || 0,
+        end: inputRef.current.selectionEnd || 0,
+      };
+    }
+  }, []);
+
+  // Restore cursor position after URL update
+  const restoreSelection = useCallback(() => {
+    if (inputRef.current && selectionRef.current) {
+      inputRef.current.setSelectionRange(selectionRef.current.start, selectionRef.current.end);
+    }
+  }, []);
+
+  // Sync local state when external value changes (e.g., URL param changes)
+  useEffect(() => {
+    setLocalSearchValue(searchValue);
+  }, [searchValue]);
+
+  // Restore focus and selection after component updates
+  useEffect(() => {
+    if (inputRef.current && document.activeElement !== inputRef.current && localSearchValue === searchValue) {
+      inputRef.current.focus();
+      restoreSelection();
+    }
+  }, [searchValue, localSearchValue, restoreSelection]);
+
+  // Handle input change with debouncing
+  const handleSearchChange = (value: string) => {
+    // Save cursor position before update
+    saveSelection();
+
+    // Update local state immediately for smooth typing
+    setLocalSearchValue(value);
+
+    // Clear existing debounce timer
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    // Debounce the URL update to reduce navigation triggers
+    debounceRef.current = setTimeout(() => {
+      // Use startTransition to defer the URL update and maintain input focus
+      startTransition(() => {
+        onSearchChange(value);
+      });
+    }, 300); // 300ms debounce
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
         <Input
+          ref={inputRef}
           placeholder={
             searchableField && filterSchema
               ? `Search by ${filterSchema.metadata[searchableField]?.label || "name"}...`
               : "Search..."
           }
-          value={searchValue}
-          onChange={(e) => onSearchChange(e.target.value)}
+          value={localSearchValue}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className="h-8 w-[150px] lg:w-[250px]"
         />
         {filterSchema && (

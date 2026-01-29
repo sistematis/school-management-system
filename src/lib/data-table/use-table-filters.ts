@@ -80,7 +80,8 @@ export function useTableFilters({ schema }: UseTableFiltersOptions): UseTableFil
         params.set(`${FILTER_PARAM_PREFIX}[${filter.field}]`, String(filter.value));
       });
 
-      router.push(`?${params.toString()}`, { scroll: false });
+      // Use replace instead of push to avoid adding to history and causing remounts
+      router.replace(`?${params.toString()}`, { scroll: false });
     },
     [searchParams, router],
   );
@@ -95,7 +96,8 @@ export function useTableFilters({ schema }: UseTableFiltersOptions): UseTableFil
         params.delete(SEARCH_PARAM);
       }
 
-      router.push(`?${params.toString()}`, { scroll: false });
+      // Use replace instead of push to avoid adding to history and causing remounts
+      router.replace(`?${params.toString()}`, { scroll: false });
     },
     [searchParams, router],
   );

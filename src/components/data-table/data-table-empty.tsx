@@ -27,7 +27,7 @@ export function DataTableEmpty({ hasFilters, hasSearch, onClearFilters }: DataTa
   };
 
   return (
-    <Card className="flex flex-col items-center justify-center p-12 text-center">
+    <Card className="flex flex-col items-center justify-center rounded-none p-12 text-center">
       {hasFilters || hasSearch ? (
         <>
           <FilterX className="mb-4 h-12 w-12 text-muted-foreground" />

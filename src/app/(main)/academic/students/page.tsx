@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -20,7 +20,6 @@ import { studentFilterSchema } from "@/lib/api/idempiere/models/c-bpartner";
 import { useODataQuery } from "@/lib/data-table/use-odata-query";
 import { useTanStackTable } from "@/lib/data-table/use-tanstack-table";
 import { useStudentStats, useStudents } from "@/lib/hooks/use-students";
-import type { Student } from "@/lib/types/students";
 
 import { getStudentColumns } from "./columns";
 
@@ -168,7 +167,7 @@ export default function StudentsPage() {
       <div className="flex flex-col gap-4 p-4 md:p-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Students</h1>
+            <h1 className="font-bold text-3xl tracking-tight">Students</h1>
             <p className="text-muted-foreground">Manage student records and information</p>
           </div>
           <Button onClick={() => router.push("/academic/students/new")}>
@@ -188,7 +187,7 @@ export default function StudentsPage() {
       <div className="flex flex-col gap-4 p-4 md:p-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Students</h1>
+            <h1 className="font-bold text-3xl tracking-tight">Students</h1>
             <p className="text-muted-foreground">Error</p>
           </div>
         </div>
@@ -199,32 +198,14 @@ export default function StudentsPage() {
     );
   }
 
-  // Empty state
-  if (!tableData.length && !isLoadingStudents) {
-    return (
-      <div className="flex flex-col gap-4 p-4 md:p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Students</h1>
-            <p className="text-muted-foreground">Manage student records and information</p>
-          </div>
-          <Button onClick={() => router.push("/academic/students/new")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Student
-          </Button>
-        </div>
-        <DataTableStats stats={statCards} isLoading={isLoadingStats} />
-        <DataTableEmpty hasFilters={activeFilters.length > 0} hasSearch={!!searchQuery} onClearFilters={resetAll} />
-      </div>
-    );
-  }
+  const isEmpty = !tableData.length && !isLoadingStudents;
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-8">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Students</h1>
+          <h1 className="font-bold text-3xl tracking-tight">Students</h1>
           <p className="text-muted-foreground">Manage student records and information</p>
         </div>
         <Button onClick={() => router.push("/academic/students/new")}>
@@ -255,15 +236,19 @@ export default function StudentsPage() {
 
         {/* Table Content */}
         {/* key includes sorting and columnVisibility to ensure table updates */}
-        <DataTable
-          key={`table-${pageSize}-${sorting.map((s) => `${s.id}-${s.desc}`).join("-")}-${Object.entries(
-            columnVisibility,
-          )
-            .map(([k, v]) => `${k}-${v}`)
-            .join("-")}`}
-          table={table}
-          columns={memoizedColumns}
-        />
+        {isEmpty ? (
+          <DataTableEmpty hasFilters={activeFilters.length > 0} hasSearch={!!searchQuery} onClearFilters={resetAll} />
+        ) : (
+          <DataTable
+            key={`table-${pageSize}-${sorting.map((s) => `${s.id}-${s.desc}`).join("-")}-${Object.entries(
+              columnVisibility,
+            )
+              .map(([k, v]) => `${k}-${v}`)
+              .join("-")}`}
+            table={table}
+            columns={memoizedColumns}
+          />
+        )}
 
         {/* Pagination */}
         <div className="border-t p-4">
