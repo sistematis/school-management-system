@@ -14,7 +14,7 @@ export function withActionHandler<T>(
     errorMessage?: string;
     confirmMessage?: string;
   },
-) {
+): (entity: T) => Promise<void> {
   return async (entity: T) => {
     // Confirm jika ada
     if (options?.confirmMessage) {
@@ -30,7 +30,8 @@ export function withActionHandler<T>(
       }
     } catch (error) {
       console.error("Action failed:", error);
-      const message = options?.errorMessage || "Action failed. Please try again.";
+      const message =
+        error instanceof Error ? error.message : options?.errorMessage || "Action failed. Please try again.";
       toast.error(message);
     }
   };
@@ -63,9 +64,14 @@ export function getDocumentActionLabel(action: DocumentAction): string {
 /**
  * Copy ID to clipboard helper
  */
-export function copyIdToClipboard(id: string, label?: string): void {
-  navigator.clipboard.writeText(id);
-  toast.success(label ? `${label} copied` : "ID copied");
+export async function copyIdToClipboard(id: string, label?: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(id);
+    toast.success(label ? `${label} copied` : "ID copied");
+  } catch (error) {
+    console.error("Failed to copy to clipboard:", error);
+    toast.error("Failed to copy to clipboard. Please try again.");
+  }
 }
 
 /**
