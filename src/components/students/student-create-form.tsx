@@ -64,11 +64,19 @@ const step2Schema = z.object({
  */
 const step3Schema = z.object({
   email: z.string().email("Invalid email").optional().or(z.literal("")),
-  greetingId: z.number().optional(),
+  greetingId: z
+    .number({
+      required_error: "Greeting is required",
+      invalid_type_error: "Greeting is required",
+    })
+    .min(1, "Greeting is required"),
   title: z.string().optional(),
   phone: z.string().optional(),
   phone2: z.string().optional(),
-  birthday: z.string().optional(),
+  birthday: z
+    .string()
+    .min(1, "Birthday is required")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)"),
   comments: z.string().optional(),
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -538,10 +546,10 @@ function Step3Form({ form, isLoading }: StepFormProps) {
         name="step3.greetingId"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Greeting</FormLabel>
+            <FormLabel>Greeting *</FormLabel>
             <Select
               onValueChange={(value) => field.onChange(Number(value))}
-              defaultValue={field.value?.toString()}
+              value={field.value?.toString()}
               disabled={isLoading}
             >
               <FormControl>
@@ -567,10 +575,11 @@ function Step3Form({ form, isLoading }: StepFormProps) {
         name="step3.birthday"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Birthday</FormLabel>
+            <FormLabel>Birthday *</FormLabel>
             <FormControl>
               <Input type="date" {...field} disabled={isLoading} />
             </FormControl>
+            <FormDescription>Format: YYYY-MM-DD</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -686,7 +695,7 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
       },
       step3: {
         email: "",
-        greetingId: undefined,
+        greetingId: 1000000, // Default: Dear
         title: "",
         phone: "",
         phone2: "",
