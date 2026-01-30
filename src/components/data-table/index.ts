@@ -11,6 +11,12 @@
  * ```
  */
 
+// Entity action types (re-exported for convenience)
+export type {
+  DocumentActionConfig,
+  MasterDataActionConfig,
+} from "@/types/entity-actions";
+
 export { DataTable } from "./data-table";
 export { DataTableColumnHeader } from "./data-table-column-header";
 export { DataTableEmpty } from "./data-table-empty";
