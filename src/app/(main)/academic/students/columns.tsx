@@ -12,11 +12,13 @@ import {
   type ProfileColumnConfig,
   type StatusColumnConfig,
 } from "@/components/data-table";
+import { studentActionConfig } from "@/config/actions/student-actions";
+import { buildMasterDataActions } from "@/lib/actions";
 import type { Student } from "@/lib/types/students";
 
 /**
  * Column definitions for Students table
- * Uses generic column builder for reusability
+ * Now uses reusable action builder
  */
 export function getStudentColumns(
   onSortChange?: (columnId: string, desc: boolean) => void,
@@ -48,25 +50,20 @@ export function getStudentColumns(
     },
   };
 
-  // Actions column configuration
+  // Actions column configuration - NOW USING BUILDER
   const actionsColumn: ActionsColumnConfig<Student> = {
     items: (student) => {
-      const items: ActionItem[] = [
-        { label: "View details", onClick: () => onViewDetails?.(student.id) },
-        { label: "Edit student", onClick: () => onEditStudent?.(student.id) },
-        { variant: "separator" },
-        {
-          label: "Delete",
-          variant: "destructive",
-          onClick: () => onDeleteStudent?.(student.id),
-        },
-      ];
-      return items;
+      // Merge config dengan page-specific handlers
+      const config = {
+        ...studentActionConfig,
+        onView: onViewDetails ? (s) => onViewDetails(s.id) : studentActionConfig.onView,
+        onEdit: onEditStudent ? (s) => onEditStudent(s.id) : studentActionConfig.onEdit,
+        onDelete: onDeleteStudent ? (s) => onDeleteStudent(s.id) : studentActionConfig.onDelete,
+      };
+
+      return buildMasterDataActions(config, student);
     },
-    copyId: {
-      label: "Copy ID",
-      getId: (student) => student.id,
-    },
+    copyId: studentActionConfig.copyId,
   };
 
   // Custom column for Student ID
