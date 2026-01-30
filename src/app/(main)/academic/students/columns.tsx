@@ -56,9 +56,9 @@ export function getStudentColumns(
       // Merge config dengan page-specific handlers
       const config = {
         ...studentActionConfig,
-        onView: onViewDetails ? (s) => onViewDetails(s.id) : studentActionConfig.onView,
-        onEdit: onEditStudent ? (s) => onEditStudent(s.id) : studentActionConfig.onEdit,
-        onDelete: onDeleteStudent ? (s) => onDeleteStudent(s.id) : studentActionConfig.onDelete,
+        onView: onViewDetails ? (s: Student) => onViewDetails(s.id) : studentActionConfig.onView,
+        onEdit: onEditStudent ? (s: Student) => onEditStudent(s.id) : studentActionConfig.onEdit,
+        onDelete: onDeleteStudent ? (s: Student) => onDeleteStudent(s.id) : studentActionConfig.onDelete,
       };
 
       return buildMasterDataActions(config, student);
