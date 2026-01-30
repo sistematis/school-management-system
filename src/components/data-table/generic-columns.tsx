@@ -65,6 +65,13 @@ export type ActionItem =
     };
 
 /**
+ * Type guard to check if an ActionItem has a label (i.e., is not a separator)
+ */
+function isActionItemWithLabel(item: ActionItem): item is ActionItem & { label: string } {
+  return "label" in item;
+}
+
+/**
  * Actions column configuration
  */
 export interface ActionsColumnConfig<T> {
@@ -247,8 +254,10 @@ function createActionsColumn<T>(config: ActionsColumnConfig<T>): ColumnDef<T> {
 
             {actionItems.map((item, index, arr) => {
               if ("variant" in item && item.variant === "separator") {
-                const prevLabel = index > 0 && "label" in arr[index - 1] ? arr[index - 1].label : "";
-                const nextLabel = index < arr.length - 1 && "label" in arr[index + 1] ? arr[index + 1].label : "";
+                const prevItem = index > 0 ? arr[index - 1] : null;
+                const nextItem = index < arr.length - 1 ? arr[index + 1] : null;
+                const prevLabel = prevItem && isActionItemWithLabel(prevItem) ? prevItem.label : "";
+                const nextLabel = nextItem && isActionItemWithLabel(nextItem) ? nextItem.label : "";
                 return <DropdownMenuSeparator key={`sep-${prevLabel}-${nextLabel}`} />;
               }
 
