@@ -1,7 +1,17 @@
 # Academic Module - Implementation Guide
 
 **Module:** Academic Management
-**Last Updated:** 2025-01-28
+**Last Updated:** 2025-01-31
+
+> [!IMPORTANT]
+> **Architecture Note:** This is a **frontend-only Next.js application** that connects directly to the **iDempiere REST API**.
+>
+> - **No Next.js API routes** for `/api/v1/academic/*` exist in this codebase
+> - The frontend uses **iDempiere REST API** endpoints directly: `/api/v1/models/c_bpartner`
+> - Student data is stored in **C_BPARTNER** table with `IsCustomer = true`
+> - The service layer (`BusinessPartnerService`) transforms iDempiere data into the student format
+>
+> **Base iDempiere URL:** `/api/v1/models`
 
 ---
 
@@ -39,134 +49,48 @@
 
 ## Phase 1: Student Management
 
-### 1.1 Database Setup
+### 1.1 Database Setup (iDempiere Tables Used)
 
-**Create Tables:**
-```sql
--- SCH_STUDENT
-CREATE TABLE SCH_STUDENT (
-    SCH_STUDENT_ID          NUMBER(10) NOT NULL PRIMARY KEY,
-    SCH_STUDENT_UU          VARCHAR2(36) UNIQUE,
-    AD_CLIENT_ID            NUMBER(10) NOT NULL,
-    AD_ORG_ID               NUMBER(10) NOT NULL,
-    ISACTIVE                CHAR(1) DEFAULT 'Y',
-    CREATED                 DATE DEFAULT SYSDATE NOT NULL,
-    CREATEDBY               NUMBER(10) NOT NULL,
-    UPDATED                 DATE DEFAULT SYSDATE NOT NULL,
-    UPDATEDBY               NUMBER(10) NOT NULL,
-    STUDENT_NO              VARCHAR2(20) NOT NULL,
-    C_BPARTNER_ID           NUMBER(10) NOT NULL,
-    ADMISSION_NO            VARCHAR2(20),
-    ADMISSION_DATE          DATE,
-    ACADEMIC_YEAR           VARCHAR2(10),
-    GRADE_LEVEL             VARCHAR2(20),
-    CLASS_NAME              VARCHAR2(20),
-    SCHOOL_TYPE             VARCHAR2(20),
-    MAJOR                   VARCHAR2(50),
-    DATE_OF_BIRTH           DATE,
-    PLACE_OF_BIRTH          VARCHAR2(50),
-    GENDER                  CHAR(1),
-    BLOOD_TYPE              CHAR(2),
-    RELIGION                VARCHAR2(20),
-    NATIONALITY             VARCHAR2(30) DEFAULT 'Indonesian',
-    ADDRESS                 VARCHAR2(255),
-    CITY                    VARCHAR2(50),
-    PROVINCE                VARCHAR2(50),
-    POSTAL_CODE             VARCHAR2(10),
-    PHONE_HOME              VARCHAR2(20),
-    PHONE_MOBILE            VARCHAR2(20),
-    EMAIL                   VARCHAR2(100),
-    FATHER_NAME             VARCHAR2(100),
-    FATHER_OCCUPATION       VARCHAR2(50),
-    FATHER_PHONE            VARCHAR2(20),
-    FATHER_EMAIL            VARCHAR2(100),
-    MOTHER_NAME             VARCHAR2(100),
-    MOTHER_OCCUPATION       VARCHAR2(50),
-    MOTHER_PHONE            VARCHAR2(20),
-    MOTHER_EMAIL            VARCHAR2(100),
-    GUARDIAN_NAME           VARCHAR2(100),
-    GUARDIAN_RELATION       VARCHAR2(20),
-    GUARDIAN_PHONE          VARCHAR2(20),
-    EMERGENCY_CONTACT       VARCHAR2(100),
-    EMERGENCY_PHONE         VARCHAR2(20),
-    PHOTO_PATH              VARCHAR2(255),
-    MEDICAL_INFO            CLOB,
-    ALLERGIES               VARCHAR2(255),
-    ENROLLMENT_STATUS       VARCHAR2(20),
-    PREVIOUS_SCHOOL         VARCHAR2(100),
-    CONSTRAINT SCH_STUDENT_CLIENT UNIQUE (STUDENT_NO, AD_CLIENT_ID)
-);
+> [!NOTE]
+> This application uses existing **iDempiere ERP tables**. No custom database tables are created.
 
--- SCH_ENROLLMENT
-CREATE TABLE SCH_ENROLLMENT (
-    SCH_ENROLLMENT_ID       NUMBER(10) NOT NULL PRIMARY KEY,
-    SCH_ENROLLMENT_UU       VARCHAR2(36) UNIQUE,
-    AD_CLIENT_ID            NUMBER(10) NOT NULL,
-    AD_ORG_ID               NUMBER(10) NOT NULL,
-    ISACTIVE                CHAR(1) DEFAULT 'Y',
-    CREATED                 DATE DEFAULT SYSDATE NOT NULL,
-    CREATEDBY               NUMBER(10) NOT NULL,
-    UPDATED                 DATE DEFAULT SYSDATE NOT NULL,
-    UPDATEDBY               NUMBER(10) NOT NULL,
-    SCH_STUDENT_ID          NUMBER(10) NOT NULL,
-    ACADEMIC_YEAR           VARCHAR2(10) NOT NULL,
-    SEMESTER                VARCHAR2(10) NOT NULL,
-    GRADE_LEVEL             VARCHAR2(20) NOT NULL,
-    CLASS_NAME              VARCHAR2(20) NOT NULL,
-    SCHOOL_TYPE             VARCHAR2(20),
-    MAJOR                   VARCHAR2(50),
-    ENROLLMENT_DATE         DATE,
-    COMPLETION_DATE         DATE,
-    ENROLLMENT_STATUS       VARCHAR2(20),
-    GRADUATION_DATE         DATE,
-    REMARKS                 VARCHAR2(255),
-    DESCRIPTION             VARCHAR2(255),
-    CONSTRAINT SCH_ENROLLMENT_UQ UNIQUE (SCH_STUDENT_ID, ACADEMIC_YEAR, SEMESTER, AD_CLIENT_ID)
-);
+**Primary iDempiere Tables:**
+- **C_BPARTNER** - Business Partner (stores student basic info)
+  - `IsCustomer = true` identifies students
+  - `Value` stores Student ID/Number
+  - `Name` stores full name
+  - `Description` stores student metadata (grade, class, etc.)
 
--- SCH_STUDENT_PARENT
-CREATE TABLE SCH_STUDENT_PARENT (
-    SCH_STUDENT_PARENT_ID   NUMBER(10) NOT NULL PRIMARY KEY,
-    SCH_STUDENT_PARENT_UU   VARCHAR2(36) UNIQUE,
-    AD_CLIENT_ID            NUMBER(10) NOT NULL,
-    AD_ORG_ID               NUMBER(10) NOT NULL,
-    ISACTIVE                CHAR(1) DEFAULT 'Y',
-    CREATED                 DATE DEFAULT SYSDATE NOT NULL,
-    CREATEDBY               NUMBER(10) NOT NULL,
-    UPDATED                 DATE DEFAULT SYSDATE NOT NULL,
-    UPDATEDBY               NUMBER(10) NOT NULL,
-    SCH_STUDENT_ID          NUMBER(10) NOT NULL,
-    C_BPARTNER_ID           NUMBER(10) NOT NULL,
-    RELATIONSHIP_TYPE       VARCHAR2(20) NOT NULL,
-    IS_PRIMARY_CONTACT      CHAR(1) DEFAULT 'N',
-    IS_EMERGENCY_CONTACT    CHAR(1) DEFAULT 'N',
-    HAS_PORTAL_ACCESS       CHAR(1) DEFAULT 'Y',
-    PORTAL_USERNAME         VARCHAR2(50)
-);
+- **C_BPARTNER_LOCATION** - Address/Location information
+  - Stores student address, city, postal code
 
--- Create indexes
-CREATE INDEX SCH_STUDENT_UU_IDX ON SCH_STUDENT(SCH_STUDENT_UU);
-CREATE INDEX SCH_STUDENT_NO_IDX ON SCH_STUDENT(STUDENT_NO);
-CREATE INDEX SCH_STUDENT_BP_IDX ON SCH_STUDENT(C_BPARTNER_ID);
-CREATE INDEX SCH_STUDENT_CLIENT_IDX ON SCH_STUDENT(AD_CLIENT_ID);
+- **AD_USER** - User/Contact records
+  - Stores login credentials, email, phone for students
 
-CREATE INDEX SCH_ENROLLMENT_STUDENT_IDX ON SCH_ENROLLMENT(SCH_STUDENT_ID);
-CREATE INDEX SCH_ENROLLMENT_YEAR_IDX ON SCH_ENROLLMENT(ACADEMIC_YEAR);
-
-CREATE INDEX SCH_STUDENT_PARENT_STUDENT_IDX ON SCH_STUDENT_PARENT(SCH_STUDENT_ID);
-CREATE INDEX SCH_STUDENT_PARENT_BP_IDX ON SCH_STUDENT_PARENT(C_BPARTNER_ID);
-```
+**Optional: Custom School Tables (if implemented in iDempiere):**
+- **SCH_STUDENT** - Extended student information
+- **SCH_ENROLLMENT** - Enrollment history
+- **SCH_STUDENT_PARENT** - Parent/guardian links
 
 ### 1.2 API Implementation
 
-**Required Endpoints:**
-- [x] `GET /api/v1/academic/students` - List students
-- [x] `GET /api/v1/academic/students/{id}` - Get student detail
-- [x] `POST /api/v1/academic/students` - Create student
-- [x] `PUT /api/v1/academic/students/{id}` - Update student
-- [x] `DELETE /api/v1/academic/students/{id}` - Delete student (soft delete)
-- [x] `GET /api/v1/academic/students/{id}/enrollments` - Get enrollment history
-- [x] `POST /api/v1/academic/students/{id}/enrollments` - Create enrollment
+> [!NOTE]
+> This application uses **iDempiere REST API** directly. No custom Next.js API routes are implemented.
+
+**Actual iDempiere Endpoints Used:**
+- [x] `GET /api/v1/models/c_bpartner?$filter=IsCustomer eq true` - List students
+- [x] `GET /api/v1/models/c_bpartner/{id}` - Get student detail
+- [x] `POST /api/v1/models/c_bpartner` - Create student (C_BPartner)
+- [x] `POST /api/v1/models/c_bpartner_location` - Create student location
+- [x] `POST /api/v1/models/ad_user` - Create student user/contact
+- [x] `PUT /api/v1/models/c_bpartner/{id}` - Update student
+- [x] `PUT /api/v1/models/c_bpartner_location/{id}` - Update location
+- [x] `DELETE /api/v1/models/c_bpartner/{id}` - Delete student (soft delete via IsActive flag)
+
+**Service Layer:**
+- `BusinessPartnerService` (`src/lib/api/idempiere/services/business-partner.service.ts`)
+- Handles authentication, data transformation, and error handling
+- Transforms C_BPartner data to/from Student format
 
 ### 1.3 Frontend Components
 

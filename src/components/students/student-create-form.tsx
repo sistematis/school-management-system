@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, User } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { type Path, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

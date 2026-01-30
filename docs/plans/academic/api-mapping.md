@@ -1,8 +1,17 @@
 # Academic Module - API Mapping
 
 **Module:** Academic Management
-**Base URL:** `/api/v1/academic`
-**Last Updated:** 2025-01-28
+**Last Updated:** 2025-01-31
+
+> [!IMPORTANT]
+> **Architecture Note:** This is a **frontend-only Next.js application** that connects directly to the **iDempiere REST API**.
+>
+> - **No Next.js API routes** for `/api/v1/academic/*` exist in this codebase
+> - The frontend uses **iDempiere REST API** endpoints directly: `/api/v1/models/c_bpartner`
+> - Student data is stored in **C_BPARTNER** table with `IsCustomer = true`
+> - The service layer (`BusinessPartnerService`) transforms iDempiere data into the student format
+>
+> **Base iDempiere URL:** `/api/v1/models`
 
 ---
 
@@ -23,206 +32,212 @@
 
 ## Overview
 
-### API to Database Table Mapping
+> [!NOTE]
+> This application uses **iDempiere REST API** directly. The mapping below shows the conceptual relationship between the frontend student model and the iDempiere database tables.
 
-| API Endpoint | Primary Table | Related Tables |
-|-------------|---------------|----------------|
-| `GET/POST /students` | `SCH_STUDENT` | `C_BPARTNER` |
-| `GET/POST /students/{id}/enrollments` | `SCH_ENROLLMENT` | `SCH_STUDENT` |
-| `GET /curricula` | `SCH_CURRICULUM` | `SCH_CURRICULUM_SUBJECT`, `SCH_SUBJECT` |
-| `GET/POST /subjects` | `SCH_SUBJECT` | - |
-| `GET /classes` | `SCH_CLASS` | `AD_USER` (Homeroom) |
-| `GET /classes/{id}/students` | `SCH_CLASS_STUDENT` | `SCH_CLASS`, `SCH_STUDENT` |
-| `GET /timetables` | `SCH_TIMETABLE` | `SCH_SCHEDULE` |
-| `GET /timetables/{id}/schedule` | `SCH_SCHEDULE` | `SCH_TIME_SLOT`, `SCH_SUBJECT`, `AD_USER` |
-| `POST /attendance/daily` | `SCH_ATTENDANCE` | `SCH_ATTENDANCE_LINE` |
-| `GET /attendance/summary` | `SCH_ATTENDANCE_LINE` | `SCH_STUDENT` |
-| `GET/POST /exams` | `SCH_EXAM` | `SCH_EXAM_TYPE`, `SCH_SUBJECT`, `SCH_CLASS` |
-| `POST /exams/{id}/grades` | `SCH_GRADE` | `SCH_EXAM`, `SCH_STUDENT` |
-| `POST /report-cards/generate` | `SCH_REPORT_CARD` | `SCH_REPORT_CARD_LINE` |
+### Frontend Model to iDempiere Table Mapping
+
+| Frontend Entity | iDempiere REST API Endpoint | Primary Table | Related Tables |
+|-----------------|---------------------------|---------------|----------------|
+| Students | `GET /api/v1/models/c_bpartner?$filter=IsCustomer eq true` | `C_BPARTNER` | `AD_USER`, `C_BPARTNER_LOCATION` |
+| Student Details | `GET /api/v1/models/c_bpartner/{id}` | `C_BPARTNER` | `C_BPARTNER_LOCATION`, `AD_USER` |
+| Student Creation | `POST /api/v1/models/c_bpartner` | `C_BPARTNER` | `C_BPARTNER_LOCATION`, `AD_USER` |
+| Student Update | `PUT /api/v1/models/c_bpartner/{id}` | `C_BPARTNER` | `C_BPARTNER_LOCATION` |
+| User/Contact | `POST /api/v1/models/ad_user` | `AD_USER` | `C_BPARTNER` |
+| Location | `POST /api/v1/models/c_bpartner_location` | `C_BPARTNER_LOCATION` | `C_BPARTNER` |
 
 ---
 
 ## Students API
 
-### List Students → SCH_STUDENT
+### List Students → C_BPARTNER (with IsCustomer filter)
 
 ```http
-GET /api/v1/academic/students
+GET /api/v1/models/c_bpartner?$filter=IsCustomer eq true
 ```
 
-**Database Query:**
-```sql
-SELECT
-    s.SCH_STUDENT_ID as id,
-    s.SCH_STUDENT_UU as uid,
-    s.STUDENT_NO as StudentNo,
-    bp.NAME as Name,
-    bp.C_BPARTNER_ID,
-    s.GRADE_LEVEL as GradeLevel,
-    s.CLASS_NAME as ClassName,
-    s.SCHOOL_TYPE as SchoolType,
-    s.GENDER as Gender,
-    s.PHONE_MOBILE as Phone,
-    s.EMAIL as Email,
-    s.ISACTIVE as IsActive,
-    'sms_student' as model-name
-FROM SCH_STUDENT s
-LEFT JOIN C_BPARTNER bp ON s.C_BPARTNER_ID = bp.C_BPARTNER_ID
-WHERE s.AD_CLIENT_ID = ?
-  AND s.ISACTIVE = 'Y'
-ORDER BY s.STUDENT_NO
+**iDempiere REST API Response:**
+```json
+{
+  "page-count": 8,
+  "records-size": 20,
+  "skip-records": 0,
+  "row-count": 150,
+  "array-count": 20,
+  "records": [
+    {
+      "id": 1001,
+      "uid": "39e85feb-94a2-4e41-ae45-e7d49d7be077",
+      "C_BPartner_ID": 1001,
+      "Name": "John Doe",
+      "Name2": null,
+      "Description": "Student - Grade 10",
+      "IsCustomer": true,
+      "Value": "2024001",
+      "IsActive": true,
+      "model-name": "C_BPartner"
+    }
+  ]
+}
 ```
 
-**Query Parameters Mapping:**
-| API Parameter | SQL Clause |
-|---------------|-----------|
-| `$filter=IsActive eq true` | `s.ISACTIVE = 'Y'` |
-| `$filter=GradeLevel eq '10'` | `s.GRADE_LEVEL = '10'` |
-| `$filter=startswith(Name,'John')` | `bp.NAME LIKE 'John%'` |
-| `$orderby=StudentNo desc` | `ORDER BY s.STUDENT_NO DESC` |
-| `$top=20&$skip=0` | `FETCH FIRST 20 ROWS ONLY` |
+**Frontend Transformation:**
+The `BusinessPartnerService` transforms the C_BPartner data into the Student format with additional fields like GradeLevel, ClassName, etc.
+
+**Query Parameters Mapping (iDempiere OData):**
+| API Parameter | OData Filter |
+|---------------|--------------|
+| `$filter=IsCustomer eq true` | Filter for students only |
+| `$filter=IsActive eq true` | `IsActive eq true` |
+| `$filter=startswith(Name,'John')` | `startswith(Name,'John')` |
+| `$orderby=Value desc` | `orderby=Value desc` (StudentNo) |
+| `$top=20&$skip=0` | Pagination |
 
 ---
 
-### Get Student Detail → SCH_STUDENT
+### Get Student Detail → C_BPARTNER
 
 ```http
-GET /api/v1/academic/students/{studentId}
+GET /api/v1/models/c_bpartner/{bpartnerId}?$expand=C_BPartner_Location,AD_User
 ```
 
-**Database Query:**
-```sql
-SELECT
-    s.SCH_STUDENT_ID,
-    s.STUDENT_NO,
-    s.C_BPARTNER_ID,
-    s.ADMISSION_NO,
-    s.ADMISSION_DATE,
-    s.ACADEMIC_YEAR,
-    s.GRADE_LEVEL,
-    s.CLASS_NAME,
-    s.SCHOOL_TYPE,
-    s.MAJOR,
-    s.DATE_OF_BIRTH,
-    s.PLACE_OF_BIRTH,
-    s.GENDER,
-    s.BLOOD_TYPE,
-    s.RELIGION,
-    s.NATIONALITY,
-    s.ADDRESS,
-    s.CITY,
-    s.PROVINCE,
-    s.POSTAL_CODE,
-    s.PHONE_HOME,
-    s.PHONE_MOBILE,
-    s.EMAIL,
-    s.FATHER_NAME,
-    s.FATHER_OCCUPATION,
-    s.FATHER_PHONE,
-    s.FATHER_EMAIL,
-    s.MOTHER_NAME,
-    s.MOTHER_OCCUPATION,
-    s.MOTHER_PHONE,
-    s.MOTHER_EMAIL,
-    s.GUARDIAN_NAME,
-    s.GUARDIAN_RELATION,
-    s.GUARDIAN_PHONE,
-    s.EMERGENCY_CONTACT,
-    s.EMERGENCY_PHONE,
-    s.PHOTO_PATH,
-    s.MEDICAL_INFO,
-    s.ALLERGIES,
-    s.ENROLLMENT_STATUS,
-    s.PREVIOUS_SCHOOL,
-    s.CREATED,
-    s.UPDATED
-FROM SCH_STUDENT s
-WHERE s.SCH_STUDENT_ID = ?
+**iDempiere REST API Response:**
+```json
+{
+  "id": 1001,
+  "uid": "39e85feb-94a2-4e41-ae45-e7d49d7be077",
+  "C_BPartner_ID": 1001,
+  "Value": "2024001",
+  "Name": "John Doe",
+  "Name2": null,
+  "Description": "Student - Grade 10",
+  "IsCustomer": true,
+  "IsActive": true,
+  "model-name": "C_BPartner",
+  "C_BPartner_Location": [
+    {
+      "C_BPartner_Location_ID": 1001,
+      "Address1": "Jl. Example No. 123",
+      "City": "Jakarta",
+      "Postal": "12345"
+    }
+  ],
+  "AD_User": [
+    {
+      "AD_User_ID": 1001,
+      "Name": "John Doe",
+      "Email": "john@example.com",
+      "Phone": "08123456789"
+    }
+  ]
+}
 ```
 
 ---
 
-### Create Student → SCH_STUDENT + C_BPARTNER
+### Create Student → C_BPARTNER + C_BPARTNER_LOCATION + AD_USER
 
 ```http
-POST /api/v1/academic/students
+POST /api/v1/models/c_bpartner
+POST /api/v1/models/c_bpartner_location
+POST /api/v1/models/ad_user
 ```
 
-**Transaction Flow:**
-```sql
--- Step 1: Create/Update C_BPARTNER
-INSERT INTO C_BPARTNER (
-    C_BPARTNER_ID, C_BPARTNER_UU, AD_CLIENT_ID, AD_ORG_ID,
-    ISACTIVE, CREATED, CREATEDBY, UPDATED, UPDATEDBY,
-    NAME, NAME2, ISCUSTOMER, BP_GROUP_ID
-) VALUES (?, ?, ?, ?, 'Y', SYSDATE, ?, SYSDATE, ?, ?, NULL, 'Y', ?);
+**Transaction Flow (implemented in BusinessPartnerService):**
 
--- Step 2: Create SCH_STUDENT
-INSERT INTO SCH_STUDENT (
-    SCH_STUDENT_ID, SCH_STUDENT_UU, AD_CLIENT_ID, AD_ORG_ID,
-    ISACTIVE, CREATED, CREATEDBY, UPDATED, UPDATEDBY,
-    STUDENT_NO, C_BPARTNER_ID, ADMISSION_NO, ADMISSION_DATE,
-    ACADEMIC_YEAR, GRADE_LEVEL, CLASS_NAME, SCHOOL_TYPE, MAJOR,
-    DATE_OF_BIRTH, PLACE_OF_BIRTH, GENDER, BLOOD_TYPE, RELIGION,
-    NATIONALITY, ADDRESS, CITY, PROVINCE, POSTAL_CODE,
-    PHONE_HOME, PHONE_MOBILE, EMAIL,
-    FATHER_NAME, FATHER_OCCUPATION, FATHER_PHONE, FATHER_EMAIL,
-    MOTHER_NAME, MOTHER_OCCUPATION, MOTHER_PHONE, MOTHER_EMAIL,
-    GUARDIAN_NAME, GUARDIAN_RELATION, GUARDIAN_PHONE,
-    EMERGENCY_CONTACT, EMERGENCY_PHONE,
-    PHOTO_PATH, MEDICAL_INFO, ALLERGIES,
-    ENROLLMENT_STATUS, PREVIOUS_SCHOOL
-) VALUES (?, ?, ?, ?, 'Y', SYSDATE, ?, SYSDATE, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+**Step 1: Create C_BPARTNER**
+```http
+POST /api/v1/models/c_bpartner
+Content-Type: application/json
+
+{
+  "Value": "2024001",
+  "Name": "John Doe",
+  "IsCustomer": true,
+  "C_BP_Group_ID": 1000000,
+  "IsActive": true
+}
 ```
+
+**Step 2: Create C_BPARTNER_LOCATION**
+```http
+POST /api/v1/models/c_bpartner_location
+Content-Type: application/json
+
+{
+  "C_BPartner_ID": 1001,
+  "Address1": "Jl. Example No. 123",
+  "City": "Jakarta",
+  "Postal": "12345",
+  "IsActive": true
+}
+```
+
+**Step 3: Create AD_USER (Contact/Login)**
+```http
+POST /api/v1/models/ad_user
+Content-Type: application/json
+
+{
+  "Name": "John Doe",
+  "C_BPartner_ID": 1001,
+  "Email": "john@example.com",
+  "Phone": "08123456789",
+  "IsActive": true
+}
+```
+
 
 ---
 
 ## Enrollment API
 
-### Get Enrollment History → SCH_ENROLLMENT
+> [!NOTE]
+> Enrollment is a **conceptual module** that needs to be implemented in iDempiere or as a custom service.
 
-```http
-GET /api/v1/academic/students/{studentId}/enrollments
-```
+### Conceptual Implementation
 
-**Database Query:**
+If implemented in iDempiere, you would create a custom `SCH_ENROLLMENT` table:
+
+**Table Structure (if implementing in iDempiere):**
 ```sql
-SELECT
-    e.SCH_ENROLLMENT_ID as enrollmentId,
-    e.ACADEMIC_YEAR as academicYear,
-    e.SEMESTER as semester,
-    e.GRADE_LEVEL as gradeLevel,
-    e.CLASS_NAME as className,
-    e.SCHOOL_TYPE as schoolType,
-    e.MAJOR as major,
-    e.ENROLLMENT_DATE as enrollmentDate,
-    e.ENROLLMENT_STATUS as enrollmentStatus,
-    e.COMPLETION_DATE as completionDate,
-    e.REMARKS
-FROM SCH_ENROLLMENT e
-WHERE e.SCH_STUDENT_ID = ?
-  AND e.AD_CLIENT_ID = ?
-ORDER BY e.ACADEMIC_YEAR DESC, e.SEMESTER DESC
+CREATE TABLE SCH_ENROLLMENT (
+    SCH_ENROLLMENT_ID       NUMBER(10) NOT NULL PRIMARY KEY,
+    SCH_ENROLLMENT_UU       VARCHAR2(36) UNIQUE,
+    AD_CLIENT_ID            NUMBER(10) NOT NULL,
+    AD_ORG_ID               NUMBER(10) NOT NULL,
+    ISACTIVE                CHAR(1) DEFAULT 'Y',
+    CREATED                 DATE DEFAULT SYSDATE NOT NULL,
+    CREATEDBY               NUMBER(10) NOT NULL,
+    UPDATED                 DATE DEFAULT SYSDATE NOT NULL,
+    UPDATEDBY               NUMBER(10) NOT NULL,
+    C_BPARTNER_ID           NUMBER(10) NOT NULL,
+    ACADEMIC_YEAR           VARCHAR2(10) NOT NULL,
+    SEMESTER                VARCHAR2(10) NOT NULL,
+    GRADE_LEVEL             VARCHAR2(20) NOT NULL,
+    CLASS_NAME              VARCHAR2(20) NOT NULL,
+    SCHOOL_TYPE             VARCHAR2(20),
+    MAJOR                   VARCHAR2(50),
+    ENROLLMENT_DATE         DATE,
+    ENROLLMENT_STATUS       VARCHAR2(20),
+    COMPLETION_DATE         DATE,
+    REMARKS                 VARCHAR2(255),
+    CONSTRAINT SCH_ENROLLMENT_UQ UNIQUE (C_BPARTNER_ID, ACADEMIC_YEAR, SEMESTER, AD_CLIENT_ID)
+);
 ```
 
----
-
-### Create Enrollment → SCH_ENROLLMENT
-
+**API Endpoint (conceptual):**
 ```http
-POST /api/v1/academic/students/{studentId}/enrollments
+GET /api/v1/models/sch_enrollment?$filter=C_BPartner_ID eq {studentId}
+POST /api/v1/models/sch_enrollment
 ```
 
-**Database Query:**
-```sql
-INSERT INTO SCH_ENROLLMENT (
-    SCH_ENROLLMENT_ID, SCH_ENROLLMENT_UU, AD_CLIENT_ID, AD_ORG_ID,
-    ISACTIVE, CREATED, CREATEDBY, UPDATED, UPDATEDBY,
-    SCH_STUDENT_ID, ACADEMIC_YEAR, SEMESTER, GRADE_LEVEL,
-    CLASS_NAME, SCHOOL_TYPE, MAJOR, ENROLLMENT_DATE,
-    ENROLLMENT_STATUS
-) VALUES (?, ?, ?, ?, 'Y', SYSDATE, ?, SYSDATE, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+**Current Workaround:**
+For now, enrollment information can be stored in the `Description` field of C_BPartner:
+```json
+{
+  "Description": "Student - Grade 10 - X-A - 2024/2025 - Semester 1"
+}
 ```
 
 ---
