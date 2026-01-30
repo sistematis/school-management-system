@@ -39,7 +39,7 @@ export function AccountSwitcher({
       <DropdownMenuContent className="min-w-56 space-y-1 rounded-lg" side="bottom" align="end" sideOffset={4}>
         {users.map((user) => (
           <DropdownMenuItem
-            key={user.email}
+            key={user.id}
             className={cn("p-0", user.id === activeUser.id && "border-l-2 border-l-primary bg-accent/50")}
             onClick={() => setActiveUser(user)}
           >
