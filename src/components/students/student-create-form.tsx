@@ -1049,36 +1049,66 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
 
           {/* Navigation Buttons */}
           <div className="flex items-center justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={currentStep === 1 ? () => (onCancel ? onCancel() : router.back()) : handlePrevious}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 1 || isLoading}>
               <ChevronLeft className="mr-2 h-4 w-4" />
-              {currentStep === 1 ? "Back" : "Previous"}
+              Previous
             </Button>
 
-            {currentStep < TOTAL_STUDENT_CREATION_STEPS ? (
-              <Button type="button" onClick={handleNext} disabled={isLoading}>
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  // Check if form has any changes
+                  const hasChanges = Object.keys(formValues).some((stepKey) => {
+                    if (typeof formValues[stepKey as keyof StudentCreateFormValues] !== "object") return false;
+                    const stepData = formValues[stepKey as keyof StudentCreateFormValues] as Record<string, unknown>;
+                    return Object.values(stepData).some(
+                      (value) =>
+                        value !== "" &&
+                        value !== undefined &&
+                        value !== null &&
+                        value !== 1000000 &&
+                        value !== 1000003 &&
+                        value !== 209 &&
+                        value !== 1000001,
+                    );
+                  });
+
+                  if (hasChanges) {
+                    if (confirm("Are you sure? Any unsaved changes will be lost.")) {
+                      onCancel ? onCancel() : router.back();
+                    }
+                  } else {
+                    onCancel ? onCancel() : router.back();
+                  }
+                }}
+                disabled={isLoading}
+              >
+                Cancel
               </Button>
-            ) : (
-              <Button type="submit" disabled={isLoading || isRolesLoading || roles.length === 0}>
-                {isLoading || isRolesLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isRolesLoading ? "Loading Roles..." : "Creating Student..."}
-                  </>
-                ) : (
-                  <>
-                    <User className="mr-2 h-4 w-4" />
-                    Create Student
-                  </>
-                )}
-              </Button>
-            )}
+
+              {currentStep < TOTAL_STUDENT_CREATION_STEPS ? (
+                <Button type="button" onClick={handleNext} disabled={isLoading}>
+                  Next
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button type="submit" disabled={isLoading || isRolesLoading || roles.length === 0}>
+                  {isLoading || isRolesLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {isRolesLoading ? "Loading Roles..." : "Creating Student..."}
+                    </>
+                  ) : (
+                    <>
+                      <User className="mr-2 h-4 w-4" />
+                      Create Student
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </form>
       </Form>
