@@ -19,6 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { getIdempiereClient } from "@/lib/api/idempiere/client";
 import type {
   ADRoleResponse,
+  BPGroupOption,
+  CBPGroupResponse,
   RoleOption,
   StudentBPCreateResponse,
   StudentBPLocationCreateResponse,
@@ -28,72 +30,6 @@ import type {
   StudentUserRoleCreateResponse,
 } from "@/lib/api/idempiere/models";
 import { STUDENT_CREATION_STEPS, TOTAL_STUDENT_CREATION_STEPS } from "@/lib/api/idempiere/models";
-
-// =============================================================================
-// Types
-// =============================================================================
-
-/**
- * Business Partner Group API Response
- */
-export interface CBPGroupResponse {
-  "page-count": number;
-  "records-size": number;
-  "skip-records": number;
-  "row-count": number;
-  "array-count": number;
-  records: CBPGroupRecord[];
-}
-
-export interface CBPGroupRecord {
-  id: number;
-  uid: string;
-  AD_Client_ID: {
-    propertyLabel: string;
-    id: number;
-    identifier: string;
-    "model-name": string;
-  };
-  AD_Org_ID: {
-    propertyLabel: string;
-    id: number;
-    identifier: string;
-    "model-name": string;
-  };
-  IsActive: boolean;
-  Created: string;
-  CreatedBy: {
-    propertyLabel: string;
-    id: number;
-    identifier: string;
-    "model-name": string;
-  };
-  Updated: string;
-  UpdatedBy: {
-    propertyLabel: string;
-    id: number;
-    identifier: string;
-    "model-name": string;
-  };
-  Value: string;
-  Name: string;
-  IsDefault: boolean;
-  IsConfidentialInfo: boolean;
-  PriorityBase: {
-    propertyLabel: string;
-    id: string;
-    identifier: string;
-    "model-name": string;
-  };
-  "model-name": string;
-}
-
-export interface BPGroupOption {
-  id: number;
-  name: string;
-  value: string;
-  isDefault: boolean;
-}
 
 // =============================================================================
 // Validation Schemas

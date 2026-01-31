@@ -26,6 +26,12 @@ export type {
   ADUserResponse,
   UserOption,
 } from "./ad-user";
+// Export C_BP_Group
+export type {
+  BPGroupOption,
+  CBPGroup,
+  CBPGroupResponse,
+} from "./c-bp-group";
 // Export C_BPartner
 export type {
   BusinessPartner,
