@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, User } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2, User } from "lucide-react";
 import { type Path, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -1007,19 +1007,9 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
     <div className="mx-auto w-full max-w-4xl">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => (onCancel ? onCancel() : router.back())}
-            disabled={isLoading}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="font-bold text-2xl">Add New Student</h1>
-            <p className="text-muted-foreground">Follow the steps to create a new student record</p>
-          </div>
+        <div>
+          <h1 className="font-bold text-2xl">Add New Student</h1>
+          <p className="text-muted-foreground">Follow the steps to create a new student record</p>
         </div>
       </div>
 
@@ -1059,9 +1049,14 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
 
           {/* Navigation Buttons */}
           <div className="flex items-center justify-between">
-            <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 1 || isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={currentStep === 1 ? () => (onCancel ? onCancel() : router.back()) : handlePrevious}
+              disabled={isLoading}
+            >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Previous
+              {currentStep === 1 ? "Back" : "Previous"}
             </Button>
 
             {currentStep < TOTAL_STUDENT_CREATION_STEPS ? (

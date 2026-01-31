@@ -10,7 +10,7 @@ import { StudentCreateForm } from "@/components/students";
  */
 export default function NewStudentPage() {
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-8">
+    <div className="space-y-6">
       <StudentCreateForm
         onSuccess={(_studentId) => {
           // Redirect to student detail or list after successful creation
