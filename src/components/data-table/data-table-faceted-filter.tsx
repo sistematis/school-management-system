@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 
-import { Check, PlusCircle } from "lucide-react";
+import { Calendar, Check, PlusCircle, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ export interface DataTableFacetedFilterProps {
 
 export function DataTableFacetedFilter({ schema, activeFilters, onFiltersChange }: DataTableFacetedFilterProps) {
   const [open, setOpen] = useState(false);
+  const [openDateFilter, setOpenDateFilter] = useState<string | null>(null);
   const activeCount = activeFilters.length;
 
   // Group fields by their group ID
@@ -61,6 +62,27 @@ export function DataTableFacetedFilter({ schema, activeFilters, onFiltersChange 
     return activeFilters.some((f) => f.field === field && f.value === value);
   };
 
+  // Get date range filters for a field
+  const getDateRangeValues = (field: string) => {
+    const fieldFilters = activeFilters.filter((f) => f.field === field);
+    const fromValue = fieldFilters.find((f) => f.operator === "ge")?.value || "";
+    const toValue = fieldFilters.find((f) => f.operator === "le")?.value || "";
+    return { fromValue, toValue, hasRange: fromValue || toValue };
+  };
+
+  const handleDateChange = (field: string, operator: "ge" | "le", value: string) => {
+    const otherFilters = activeFilters.filter((f) => !(f.field === field && f.operator === operator));
+    if (value) {
+      onFiltersChange([...otherFilters, { field, operator, value }]);
+    } else {
+      onFiltersChange(otherFilters);
+    }
+  };
+
+  const clearDateRange = (field: string) => {
+    onFiltersChange(activeFilters.filter((f) => f.field !== field));
+  };
+
   const clearAll = () => {
     onFiltersChange([]);
     setOpen(false);
@@ -99,13 +121,90 @@ export function DataTableFacetedFilter({ schema, activeFilters, onFiltersChange 
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent className="w-[280px] p-0" align="start">
         <div className="p-1">
           {Object.entries(groupedFields).map(([groupId, group]) => (
             <div key={groupId} className="pb-4 last:pb-0">
               <h4 className="px-2 py-1 font-semibold text-muted-foreground text-xs">{group.title}</h4>
               <div className="space-y-1">
                 {group.fields.map(({ name, metadata }) => {
+                  // For date fields, show date range picker
+                  if (metadata.type === "date") {
+                    const { fromValue, toValue, hasRange } = getDateRangeValues(name);
+
+                    return (
+                      <Popover
+                        key={name}
+                        open={openDateFilter === name}
+                        onOpenChange={(isOpen) => setOpenDateFilter(isOpen ? name : null)}
+                      >
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent",
+                              hasRange && "bg-accent",
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="flex-1 text-left">{metadata.label}</span>
+                            </div>
+                            {hasRange && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-3" align="start">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm">{metadata.label} Range</span>
+                              {hasRange && (
+                                <button
+                                  type="button"
+                                  onClick={() => clearDateRange(name)}
+                                  className="text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <div className="space-y-1">
+                                <label htmlFor={`from-${name}`} className="text-muted-foreground text-xs">
+                                  From
+                                </label>
+                                <input
+                                  id={`from-${name}`}
+                                  type="date"
+                                  value={fromValue}
+                                  onChange={(e) => handleDateChange(name, "ge", e.target.value)}
+                                  className={cn(
+                                    "flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 pr-8 text-xs",
+                                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label htmlFor={`to-${name}`} className="text-muted-foreground text-xs">
+                                  To
+                                </label>
+                                <input
+                                  id={`to-${name}`}
+                                  type="date"
+                                  value={toValue}
+                                  onChange={(e) => handleDateChange(name, "le", e.target.value)}
+                                  className={cn(
+                                    "flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 pr-8 text-xs",
+                                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  }
+
                   // For boolean fields, show as toggle
                   if (metadata.type === "boolean") {
                     return (

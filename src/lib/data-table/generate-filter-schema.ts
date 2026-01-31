@@ -59,7 +59,15 @@ function autoGenerateGroups(
     });
   }
 
-  // Note: Date fields are rendered as separate toolbar buttons, not in the faceted filter popover
+  // Group 4: Dates
+  const dateFields = fields.filter((f) => metadata[f].type === "date");
+  if (dateFields.length > 0) {
+    groups.push({
+      id: "dates",
+      title: "Date Range",
+      fields: dateFields,
+    });
+  }
 
   return groups;
 }

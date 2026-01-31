@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ActiveFilter, FilterSchema } from "@/lib/data-table/filter.types";
 
-import { DataTableDateRangeFilter } from "./data-table-date-range-filter";
 import { DataTableFacetedFilter } from "./data-table-faceted-filter";
 import { DataTableViewOptions } from "./data-table-view-options";
 
@@ -129,18 +128,6 @@ export function DataTableToolbar<TData>({
             onFiltersChange={onFiltersChange}
           />
         )}
-        {filterSchema &&
-          Object.entries(filterSchema.metadata)
-            .filter(([, metadata]) => metadata.type === "date")
-            .map(([field, metadata]) => (
-              <DataTableDateRangeFilter
-                key={field}
-                field={field}
-                metadata={metadata}
-                activeFilters={activeFilters}
-                onFiltersChange={onFiltersChange}
-              />
-            ))}
         {isFiltered && (
           <Button variant="ghost" onClick={() => onFiltersChange([])} className="h-8 px-2 lg:px-3">
             Reset
