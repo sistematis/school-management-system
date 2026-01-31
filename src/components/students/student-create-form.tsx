@@ -752,6 +752,46 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   // Watch form values for validation
   const formValues = form.watch();
 
+  // Default values reference for dirty check
+  const defaultValues = useMemo(
+    () => ({
+      step1: {
+        value: "",
+        name: "",
+        name2: "",
+        bpGroupId: 1000003,
+        description: "",
+        taxId: "",
+      },
+      step2: {
+        locationName: "",
+        address1: "",
+        address2: "",
+        address3: "",
+        address4: "",
+        city: "",
+        postal: "",
+        countryId: 209,
+      },
+      step3: {
+        email: "",
+        greetingId: 1000000,
+        title: "",
+        phone: "",
+        phone2: "",
+        birthday: "",
+        comments: "",
+        username: "",
+        password: "",
+        userPin: "",
+      },
+      step4: {
+        roleId: 1000001,
+      },
+    }),
+    [],
+  );
+
   // API client
   const client = getIdempiereClient();
 
@@ -1059,20 +1099,17 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  // Check if form has any changes
-                  const hasChanges = Object.keys(formValues).some((stepKey) => {
-                    if (typeof formValues[stepKey as keyof StudentCreateFormValues] !== "object") return false;
-                    const stepData = formValues[stepKey as keyof StudentCreateFormValues] as Record<string, unknown>;
-                    return Object.values(stepData).some(
-                      (value) =>
-                        value !== "" &&
-                        value !== undefined &&
-                        value !== null &&
-                        value !== 1000000 &&
-                        value !== 1000003 &&
-                        value !== 209 &&
-                        value !== 1000001,
-                    );
+                  // Check if form has any changes by comparing against default values
+                  const hasChanges = Object.keys(defaultValues).some((stepKey) => {
+                    const stepDefault = defaultValues[stepKey as keyof StudentCreateFormValues] as Record<
+                      string,
+                      unknown
+                    >;
+                    const stepCurrent = formValues[stepKey as keyof StudentCreateFormValues] as Record<string, unknown>;
+
+                    return Object.keys(stepDefault).some((fieldKey) => {
+                      return stepCurrent[fieldKey] !== stepDefault[fieldKey];
+                    });
                   });
 
                   if (hasChanges) {
