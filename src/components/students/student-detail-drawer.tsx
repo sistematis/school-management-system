@@ -2,19 +2,7 @@
 
 "use client";
 
-import {
-  AtSign,
-  Banknote,
-  Building2,
-  Cake,
-  Calendar,
-  CreditCard,
-  Mail,
-  MapPin,
-  Phone,
-  User,
-  Users,
-} from "lucide-react";
+import { AtSign, Building2, Cake, Calendar, Mail, MapPin, Phone, User, Users } from "lucide-react";
 
 import {
   type DetailSectionConfig,
@@ -26,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ADUser } from "@/lib/api/idempiere/models/ad-user/ad-user.types";
-import type { BusinessPartner, CBPartnerLocation, CBPBankAccount } from "@/lib/api/idempiere/models/c-bpartner";
+import type { BusinessPartner, CBPartnerLocation } from "@/lib/api/idempiere/models/c-bpartner";
 
 // =============================================================================
 // Helpers
@@ -167,107 +155,6 @@ function LocationCard({ location }: { location: CBPartnerLocation }) {
   );
 }
 
-/**
- * Bank account card component for CBPBankAccount
- */
-function BankAccountCard({ account }: { account: CBPBankAccount }) {
-  const isCreditCard = !!account.CreditCardNumber && account.CreditCardNumber.length > 0;
-  const maskedNumber = isCreditCard
-    ? `**** **** **** ${account.CreditCardNumber?.slice(-4) || "****"}`
-    : account.BankAccount || "-";
-
-  const cardTypeDisplay = account.CreditCardType?.identifier || "N/A";
-  const accountUsageDisplay = account.BPBankAcctUse?.identifier || "N/A";
-
-  const hasExpiration = account.CreditCardExpMM > 0 || account.CreditCardExpYY > 0;
-  const expirationDisplay =
-    account.CreditCardExpMM > 0 && account.CreditCardExpYY > 0
-      ? `${String(account.CreditCardExpMM).padStart(2, "0")}/${account.CreditCardExpYY}`
-      : hasExpiration
-        ? "Incomplete"
-        : null;
-
-  return (
-    <Card className="border-muted/50">
-      <CardHeader className="p-4 pb-2">
-        <div className="flex items-center gap-2">
-          <CreditCard className="size-4 text-muted-foreground" />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <CardTitle className="truncate text-sm">{account.A_Name || "Bank Account"}</CardTitle>
-            {account.AD_User_ID && (
-              <CardDescription className="truncate text-xs">For: {account.AD_User_ID.identifier}</CardDescription>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3 p-4 pt-2">
-        <div className="space-y-1">
-          <p className="text-muted-foreground text-xs">{isCreditCard ? "Card Number" : "Account Number"}</p>
-          <p className="font-medium font-mono text-sm">{maskedNumber}</p>
-        </div>
-
-        {isCreditCard && account.CreditCardType && (
-          <div className="space-y-1">
-            <p className="text-muted-foreground text-xs">Card Type</p>
-            <Badge variant="outline" className="text-xs">
-              {cardTypeDisplay}
-            </Badge>
-          </div>
-        )}
-
-        {expirationDisplay && (
-          <div className="space-y-1">
-            <p className="text-muted-foreground text-xs">Expires</p>
-            <p className="text-sm">{expirationDisplay}</p>
-          </div>
-        )}
-
-        {account.BPBankAcctUse && (
-          <div className="space-y-1">
-            <p className="text-muted-foreground text-xs">Usage</p>
-            <Badge variant="secondary" className="text-xs">
-              {accountUsageDisplay}
-            </Badge>
-          </div>
-        )}
-
-        {(account.A_Address || account.A_City) && (
-          <div className="space-y-1 border-t pt-2">
-            <p className="text-muted-foreground text-xs">Bank Address</p>
-            <p className="text-sm">
-              {[account.A_Address, account.A_City, account.A_Zip, account.A_Country].filter(Boolean).join(", ") || "-"}
-            </p>
-          </div>
-        )}
-
-        {account.A_Phone && (
-          <div className="flex items-center gap-2 text-sm">
-            <Phone className="size-3.5 shrink-0 text-muted-foreground" />
-            <a href={`tel:${account.A_Phone}`} className="truncate text-primary hover:underline">
-              {account.A_Phone}
-            </a>
-          </div>
-        )}
-
-        {account.A_EMail && (
-          <div className="flex items-center gap-2 text-sm">
-            <Mail className="size-3.5 shrink-0 text-muted-foreground" />
-            <a href={`mailto:${account.A_EMail}`} className="truncate text-primary hover:underline">
-              {account.A_EMail}
-            </a>
-          </div>
-        )}
-
-        {account.IsACH && (
-          <Badge variant="outline" className="text-xs">
-            ACH Enabled
-          </Badge>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 // =============================================================================
 // Main Component
 // =============================================================================
@@ -288,7 +175,6 @@ export function StudentDetailDrawer({
 }: StudentDetailDrawerProps) {
   const contacts = student?.ad_user ?? [];
   const locations = student?.c_bpartner_location ?? [];
-  const bankAccounts = student?.c_bp_bankaccount ?? [];
 
   // Configure header
   const header: EntityHeaderConfig<BusinessPartner> = {
@@ -417,26 +303,6 @@ export function StudentDetailDrawer({
           <div className="space-y-3">
             {locations.map((location) => (
               <LocationCard key={location.id} location={location} />
-            ))}
-          </div>
-        );
-      },
-    },
-    {
-      value: "item-bank-accounts",
-      title: "Bank Accounts",
-      icon: Banknote,
-      count: bankAccounts.length,
-      renderContent: () => {
-        if (bankAccounts.length === 0) {
-          return (
-            <div className="flex items-center gap-2 py-2 text-muted-foreground text-sm">No bank accounts found</div>
-          );
-        }
-        return (
-          <div className="space-y-3">
-            {bankAccounts.map((account) => (
-              <BankAccountCard key={account.id} account={account} />
             ))}
           </div>
         );
