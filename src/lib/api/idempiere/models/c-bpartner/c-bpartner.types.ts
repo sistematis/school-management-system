@@ -189,8 +189,7 @@ export type BusinessPartner = CBPartner;
 // Filterable Fields Metadata (for Dynamic Data Table)
 // =============================================================================
 
-import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, Briefcase, Cake, CheckCircle, Globe, Mail, Phone, Store, User, Users } from "lucide-react";
+import { AlertTriangle, Briefcase, Cake, Calendar, CheckCircle, Globe, Mail, Phone, Store, User } from "lucide-react";
 
 /**
  * Filterable field metadata for C_BPartner
@@ -266,6 +265,18 @@ export const CBPartnerFilterableFields = {
     operators: ["eq", "gt", "lt"] as const,
     icon: Cake,
   },
+  Created: {
+    label: "Created Date",
+    type: "date" as const,
+    operators: ["eq", "gt", "lt", "ge", "le"] as const,
+    icon: Calendar,
+  },
+  Updated: {
+    label: "Updated Date",
+    type: "date" as const,
+    operators: ["eq", "gt", "lt", "ge", "le"] as const,
+    icon: Calendar,
+  },
 
   // Custom fields for school management
   parentContact: {
@@ -284,15 +295,6 @@ export const CBPartnerFilterableFields = {
     type: "string" as const,
     operators: ["contains"] as const,
     icon: AlertTriangle,
-  },
-
-  // Reference fields (with value rules)
-  C_BP_Group_ID: {
-    label: "BP Group",
-    type: "reference" as const,
-    operators: ["eq"] as const,
-    modelName: "C_BP_Group",
-    icon: Users,
   },
 } as const;
 

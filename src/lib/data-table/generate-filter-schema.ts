@@ -7,7 +7,7 @@ import type { FilterSchema, ModelFilterMetadata } from "./filter.types";
  * Groups fields by type and usage patterns
  */
 export function generateFilterSchema(
-  modelName: string,
+  _modelName: string,
   metadata: ModelFilterMetadata,
   variant?: "student" | "vendor" | "employee" | "all",
 ): FilterSchema {
@@ -22,7 +22,11 @@ export function generateFilterSchema(
   };
 }
 
-function autoGenerateGroups(fields: string[], metadata: ModelFilterMetadata, variant?: string): FilterSchema["groups"] {
+function autoGenerateGroups(
+  fields: string[],
+  metadata: ModelFilterMetadata,
+  _variant?: string,
+): FilterSchema["groups"] {
   const groups: FilterSchema["groups"] = [];
 
   // Group 1: Status flags (boolean fields)
@@ -55,15 +59,7 @@ function autoGenerateGroups(fields: string[], metadata: ModelFilterMetadata, var
     });
   }
 
-  // Group 4: Dates
-  const dateFields = fields.filter((f) => metadata[f].type === "date");
-  if (dateFields.length > 0) {
-    groups.push({
-      id: "dates",
-      title: "Dates",
-      fields: dateFields,
-    });
-  }
+  // Note: Date fields are rendered as separate toolbar buttons, not in the faceted filter popover
 
   return groups;
 }
