@@ -29,6 +29,19 @@ import type { ADUser } from "@/lib/api/idempiere/models/ad-user/ad-user.types";
 import type { BusinessPartner, CBPartnerLocation, CBPBankAccount } from "@/lib/api/idempiere/models/c-bpartner";
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Format date and time with locale support
+ * Example output: "1/31/2026, 2:35:45 PM"
+ */
+function formatDateTime(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleString();
+}
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -349,12 +362,12 @@ export function StudentDetailDrawer({
           {
             icon: Calendar,
             label: "Created",
-            value: student?.Created ? new Date(student.Created).toLocaleDateString() : "",
+            value: student?.Created ? formatDateTime(student.Created) : "",
           },
           {
             icon: Calendar,
             label: "Updated",
-            value: student?.Updated ? new Date(student.Updated).toLocaleDateString() : "",
+            value: student?.Updated ? formatDateTime(student.Updated) : "",
           },
         ];
 
