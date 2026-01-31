@@ -8,6 +8,7 @@ import { Calendar, Check, PlusCircle, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import type { ActiveFilter, FilterFieldMetadata, FilterSchema, ODataOperator } from "@/lib/data-table/filter.types";
@@ -133,75 +134,30 @@ export function DataTableFacetedFilter({ schema, activeFilters, onFiltersChange 
                     const { fromValue, toValue, hasRange } = getDateRangeValues(name);
 
                     return (
-                      <Popover
-                        key={name}
-                        open={openDateFilter === name}
-                        onOpenChange={(isOpen) => setOpenDateFilter(isOpen ? name : null)}
-                      >
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={cn(
-                              "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent",
-                              hasRange && "bg-accent",
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="flex-1 text-left">{metadata.label}</span>
-                            </div>
-                            {hasRange && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 p-3" align="start">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">{metadata.label} Range</span>
-                              {hasRange && (
-                                <button
-                                  type="button"
-                                  onClick={() => clearDateRange(name)}
-                                  className="text-muted-foreground hover:text-foreground"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
-                              )}
-                            </div>
-                            <div className="space-y-2">
-                              <div className="space-y-1">
-                                <label htmlFor={`from-${name}`} className="text-muted-foreground text-xs">
-                                  From
-                                </label>
-                                <input
-                                  id={`from-${name}`}
-                                  type="date"
-                                  value={fromValue}
-                                  onChange={(e) => handleDateChange(name, "ge", e.target.value)}
-                                  className={cn(
-                                    "flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 pr-8 text-xs",
-                                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                                  )}
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <label htmlFor={`to-${name}`} className="text-muted-foreground text-xs">
-                                  To
-                                </label>
-                                <input
-                                  id={`to-${name}`}
-                                  type="date"
-                                  value={toValue}
-                                  onChange={(e) => handleDateChange(name, "le", e.target.value)}
-                                  className={cn(
-                                    "flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 pr-8 text-xs",
-                                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                                  )}
-                                />
-                              </div>
-                            </div>
+                      <div key={name} className="px-2 py-1.5">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm font-medium">{metadata.label}</span>
                           </div>
-                        </PopoverContent>
-                      </Popover>
+                          {hasRange && (
+                            <button
+                              type="button"
+                              onClick={() => clearDateRange(name)}
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <DateRangePicker
+                          value={{ from: fromValue, to: toValue }}
+                          onChange={(range) => {
+                            if (range.from) handleDateChange(name, "ge", range.from);
+                            if (range.to) handleDateChange(name, "le", range.to);
+                          }}
+                        />
+                      </div>
                     );
                   }
 
