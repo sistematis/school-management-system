@@ -30,6 +30,72 @@ import type {
 import { STUDENT_CREATION_STEPS, TOTAL_STUDENT_CREATION_STEPS } from "@/lib/api/idempiere/models";
 
 // =============================================================================
+// Types
+// =============================================================================
+
+/**
+ * Business Partner Group API Response
+ */
+export interface CBPGroupResponse {
+  "page-count": number;
+  "records-size": number;
+  "skip-records": number;
+  "row-count": number;
+  "array-count": number;
+  records: CBPGroupRecord[];
+}
+
+export interface CBPGroupRecord {
+  id: number;
+  uid: string;
+  AD_Client_ID: {
+    propertyLabel: string;
+    id: number;
+    identifier: string;
+    "model-name": string;
+  };
+  AD_Org_ID: {
+    propertyLabel: string;
+    id: number;
+    identifier: string;
+    "model-name": string;
+  };
+  IsActive: boolean;
+  Created: string;
+  CreatedBy: {
+    propertyLabel: string;
+    id: number;
+    identifier: string;
+    "model-name": string;
+  };
+  Updated: string;
+  UpdatedBy: {
+    propertyLabel: string;
+    id: number;
+    identifier: string;
+    "model-name": string;
+  };
+  Value: string;
+  Name: string;
+  IsDefault: boolean;
+  IsConfidentialInfo: boolean;
+  PriorityBase: {
+    propertyLabel: string;
+    id: string;
+    identifier: string;
+    "model-name": string;
+  };
+  "model-name": string;
+}
+
+export interface BPGroupOption {
+  id: number;
+  name: string;
+  value: string;
+  isDefault: boolean;
+}
+
+// =============================================================================
 // Validation Schemas
 // =============================================================================
 
@@ -167,12 +233,15 @@ interface StepFormProps {
   form: ReturnType<typeof useForm<StudentCreateFormValues>>;
   isLoading?: boolean;
   roles?: RoleOption[];
+  bpGroups?: BPGroupOption[];
 }
 
 /**
  * Step 1: Basic Information Form
  */
-function Step1Form({ form, isLoading }: StepFormProps) {
+function Step1Form({ form, isLoading, bpGroups = [] }: StepFormProps) {
+  const selectedBPGroup = bpGroups.find((g) => g.id === form.watch("step1.bpGroupId"));
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* Student ID / Code */}
@@ -230,20 +299,25 @@ function Step1Form({ form, isLoading }: StepFormProps) {
             <FormLabel>Student Group *</FormLabel>
             <Select
               onValueChange={(value) => field.onChange(Number(value))}
-              defaultValue={field.value?.toString()}
-              disabled={isLoading}
+              value={field.value?.toString()}
+              disabled={isLoading || bpGroups.length === 0}
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select student group" />
+                  <SelectValue placeholder={bpGroups.length === 0 ? "Loading groups..." : "Select student group"} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="1000003">Sekolah Menengah Kejuruan (SMK)</SelectItem>
-                <SelectItem value="1000002">Sekolah Menengah Atas (SMA)</SelectItem>
-                <SelectItem value="1000001">Sekolah Menengah Pertama (SMP)</SelectItem>
+                {bpGroups.map((group) => (
+                  <SelectItem key={group.id} value={group.id.toString()}>
+                    {group.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            <FormDescription>
+              {selectedBPGroup ? <>Selected: {selectedBPGroup.name}</> : <>Select a student group for classification</>}
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -703,6 +777,8 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   const [isLoading, setIsLoading] = useState(false);
   const [isRolesLoading, setIsRolesLoading] = useState(true);
   const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [isBPGroupsLoading, setIsBPGroupsLoading] = useState(true);
+  const [bpGroups, setBpGroups] = useState<BPGroupOption[]>([]);
   const [_creationContext, setCreationContext] = useState<StudentCreationContext>({});
 
   // Track step transitions to prevent form submission during transition
@@ -716,7 +792,7 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
         value: "",
         name: "",
         name2: "",
-        bpGroupId: 1000003, // Default: SMK
+        bpGroupId: 0, // Will be set after fetching BP groups
         description: "",
         taxId: "",
       },
@@ -759,7 +835,7 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
         value: "",
         name: "",
         name2: "",
-        bpGroupId: 1000003,
+        bpGroupId: 0, // Will be set after fetching BP groups
         description: "",
         taxId: "",
       },
@@ -829,6 +905,44 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
     };
 
     fetchRoles();
+  }, [client, form]);
+
+  // Fetch BP Groups from API
+  useEffect(() => {
+    const fetchBPGroups = async () => {
+      setIsBPGroupsLoading(true);
+      try {
+        const response = await client.get<CBPGroupResponse>("/models/c_bp_group", {
+          $filter: "IsActive eq true",
+          $orderby: "Name asc",
+        });
+        // Transform to BPGroupOption format
+        const bpGroupOptions: BPGroupOption[] = response.records.map((group) => ({
+          id: group.id,
+          name: group.Name,
+          value: group.Value,
+          isDefault: group.IsDefault,
+        }));
+        setBpGroups(bpGroupOptions);
+
+        // Set default BP group to default or first group
+        const currentBPGroupId = form.getValues("step1.bpGroupId");
+        const validBPGroupIds = bpGroupOptions.map((g) => g.id);
+        if (!validBPGroupIds.includes(currentBPGroupId)) {
+          const defaultGroup = bpGroupOptions.find((g) => g.isDefault) || bpGroupOptions[0];
+          form.setValue("step1.bpGroupId", defaultGroup?.id || 0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch BP groups:", error);
+        toast.error("Error", {
+          description: "Failed to load available student groups. Please refresh the page.",
+        });
+      } finally {
+        setIsBPGroupsLoading(false);
+      }
+    };
+
+    fetchBPGroups();
   }, [client, form]);
 
   // Get current step schema for validation
@@ -1026,7 +1140,7 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   const renderStepForm = useCallback(() => {
     switch (currentStep) {
       case 1:
-        return <Step1Form form={form} isLoading={isLoading} />;
+        return <Step1Form form={form} isLoading={isLoading} bpGroups={bpGroups} />;
       case 2:
         return <Step2Form form={form} isLoading={isLoading} />;
       case 3:
@@ -1036,7 +1150,7 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
       default:
         return null;
     }
-  }, [currentStep, form, isLoading, roles]);
+  }, [currentStep, form, isLoading, roles, bpGroups]);
 
   // Calculate progress percentage
   const progressPercentage = useMemo(() => {
