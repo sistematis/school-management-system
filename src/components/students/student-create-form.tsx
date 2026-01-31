@@ -1004,7 +1004,7 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   }, [currentStep]);
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6">
         <div>
