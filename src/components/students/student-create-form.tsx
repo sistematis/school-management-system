@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { getIdempiereClient } from "@/lib/api/idempiere/client";
 import type {
+  ADRoleResponse,
+  RoleOption,
   StudentBPCreateResponse,
   StudentBPLocationCreateResponse,
   StudentCreateFormData,
@@ -164,6 +166,7 @@ function Stepper({ currentStep, steps }: StepperProps) {
 interface StepFormProps {
   form: ReturnType<typeof useForm<StudentCreateFormValues>>;
   isLoading?: boolean;
+  roles?: RoleOption[];
 }
 
 /**
@@ -612,33 +615,62 @@ function Step3Form({ form, isLoading }: StepFormProps) {
 /**
  * Step 4: Role Assignment Form
  */
-function Step4Form({ form, isLoading }: StepFormProps) {
+function Step4Form({ form, isLoading, roles = [] }: StepFormProps) {
+  const selectedRole = roles.find((r) => r.id === form.watch("step4.roleId"));
+
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {/* Info Box */}
+      {roles.length === 0 ? (
+        <div className="md:col-span-2 rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100">
+          <p className="text-sm font-medium">Loading available roles...</p>
+          <p className="text-muted-foreground text-sm">Please wait while we fetch the system roles from the server.</p>
+        </div>
+      ) : (
+        <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+          <p className="text-sm font-medium">Final Step: Select System Role</p>
+          <p className="text-muted-foreground text-sm">
+            Choose a role for this student from the available options below, then click "Create Student" to complete the
+            registration.
+          </p>
+        </div>
+      )}
+
       {/* Role */}
       <FormField
         control={form.control}
         name="step4.roleId"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="md:col-span-2">
             <FormLabel>System Role *</FormLabel>
             <Select
               onValueChange={(value) => field.onChange(Number(value))}
-              defaultValue={field.value?.toString()}
-              disabled={isLoading}
+              value={field.value?.toString()}
+              disabled={isLoading || roles.length === 0}
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
+                  <SelectValue placeholder={roles.length === 0 ? "Loading roles..." : "Select role"} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="1000001">SISTEMATIS User</SelectItem>
-                <SelectItem value="1000002">SISTEMATIS Admin</SelectItem>
-                <SelectItem value="1000000">System Administrator</SelectItem>
+                {roles.map((role) => (
+                  <SelectItem key={role.id} value={role.id.toString()}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{role.name}</span>
+                      {role.description && <span className="text-muted-foreground text-xs">{role.description}</span>}
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <FormDescription>Assign a system role to determine the student's access permissions</FormDescription>
+            <FormDescription>
+              {selectedRole ? (
+                <>Selected: {selectedRole.name}</>
+              ) : (
+                <>Assign a system role to determine the student's access permissions</>
+              )}
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -669,7 +701,12 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   // Step state
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRolesLoading, setIsRolesLoading] = useState(true);
+  const [roles, setRoles] = useState<RoleOption[]>([]);
   const [_creationContext, setCreationContext] = useState<StudentCreationContext>({});
+
+  // Track step transitions to prevent form submission during transition
+  const isTransitioningRef = useRef(false);
 
   // Form setup
   const form = useForm<StudentCreateFormValues>({
@@ -706,7 +743,7 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
         userPin: "",
       },
       step4: {
-        roleId: 1000001, // Default: SISTEMATIS User
+        roleId: 1000001, // Default, will be updated by API if not valid
       },
     },
     mode: "onChange",
@@ -714,6 +751,45 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
 
   // Watch form values for validation
   const formValues = form.watch();
+
+  // API client
+  const client = getIdempiereClient();
+
+  // Fetch roles from API
+  useEffect(() => {
+    const fetchRoles = async () => {
+      setIsRolesLoading(true);
+      try {
+        const response = await client.get<ADRoleResponse>("/models/ad_role", {
+          $filter: "IsActive eq true",
+          $orderby: "Name asc",
+        });
+        // Transform to RoleOption format
+        const roleOptions: RoleOption[] = response.records.map((role) => ({
+          id: role.id,
+          name: role.Name,
+          description: role.Description,
+        }));
+        setRoles(roleOptions);
+
+        // Set default role to first role if current value is not in the list
+        const currentRoleId = form.getValues("step4.roleId");
+        const validRoleIds = roleOptions.map((r) => r.id);
+        if (!validRoleIds.includes(currentRoleId)) {
+          form.setValue("step4.roleId", roleOptions[0]?.id || 0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch roles:", error);
+        toast.error("Error", {
+          description: "Failed to load available roles. Please refresh the page.",
+        });
+      } finally {
+        setIsRolesLoading(false);
+      }
+    };
+
+    fetchRoles();
+  }, [client, form]);
 
   // Get current step schema for validation
   const getCurrentStepSchema = useCallback(() => {
@@ -760,7 +836,16 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
     if (!isValid) return;
 
     if (currentStep < TOTAL_STUDENT_CREATION_STEPS) {
-      setCurrentStep((prev) => prev + 1);
+      // Set transitioning flag to prevent form submission during step change
+      isTransitioningRef.current = true;
+      setCurrentStep((prev) => {
+        const nextStep = prev + 1;
+        // Clear the transitioning flag after state update completes
+        setTimeout(() => {
+          isTransitioningRef.current = false;
+        }, 0);
+        return nextStep;
+      });
     }
   }, [currentStep, validateCurrentStep]);
 
@@ -772,8 +857,6 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   }, [currentStep]);
 
   // API calls for each step
-  const client = getIdempiereClient();
-
   const createBusinessPartner = useCallback(
     async (data: StudentCreateFormData["step1"]) => {
       const payload = {
@@ -854,6 +937,12 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
 
   // Handle Form Submit
   const onSubmit = useCallback(async () => {
+    // Prevent form submission during step transitions
+    // This fixes the bug where clicking "Next" from Step 3 would submit the form
+    // instead of navigating to Step 4 (Role Assignment)
+    if (isTransitioningRef.current) {
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -903,11 +992,11 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
       case 3:
         return <Step3Form form={form} isLoading={isLoading} />;
       case 4:
-        return <Step4Form form={form} isLoading={isLoading} />;
+        return <Step4Form form={form} isLoading={isLoading} roles={roles} />;
       default:
         return null;
     }
-  }, [currentStep, form, isLoading]);
+  }, [currentStep, form, isLoading, roles]);
 
   // Calculate progress percentage
   const progressPercentage = useMemo(() => {
@@ -955,7 +1044,16 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
 
       {/* Form */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-6"
+          onKeyDown={(e) => {
+            // Prevent Enter key from submitting the form (except in textarea)
+            if (e.key === "Enter" && e.target instanceof HTMLInputElement && e.target.type !== "textarea") {
+              e.preventDefault();
+            }
+          }}
+        >
           {/* Current Step Form */}
           <div className="rounded-lg border bg-card p-6">{renderStepForm()}</div>
 
@@ -972,11 +1070,11 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" disabled={isLoading || isRolesLoading || roles.length === 0}>
+                {isLoading || isRolesLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Student...
+                    {isRolesLoading ? "Loading Roles..." : "Creating Student..."}
                   </>
                 ) : (
                   <>

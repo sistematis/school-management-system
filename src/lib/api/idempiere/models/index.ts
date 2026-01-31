@@ -12,12 +12,19 @@ export type {
   AAssetResponse,
   Asset,
 } from "./a-asset";
+// Export AD_Role
+export type {
+  ADRole,
+  ADRoleResponse,
+  RoleOption,
+} from "./ad-role";
 // Export AD_User
 export type {
   ADUser,
   ADUserCreate,
   ADUserExpanded,
   ADUserResponse,
+  UserOption,
 } from "./ad-user";
 // Export C_BPartner
 export type {
