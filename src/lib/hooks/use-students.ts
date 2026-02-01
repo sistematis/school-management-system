@@ -62,7 +62,14 @@ export function useStudents({ queryParams, enabled = true }: UseStudentsOptions 
 
       // Build raw OData params
       const params: Record<string, string | number> = {};
-      if (queryParams?.$filter) params.$filter = queryParams.$filter;
+      // IMPORTANT: iDempiere API defaults to IsActive=true only.
+      // We must explicitly request both active and inactive records.
+      const showAllFilter = "IsActive eq true OR IsActive eq false";
+      if (queryParams?.$filter) {
+        params.$filter = `(${showAllFilter}) and (${queryParams.$filter})`;
+      } else {
+        params.$filter = showAllFilter;
+      }
       if (queryParams?.$orderby) params.$orderby = queryParams.$orderby;
       if (queryParams?.$top) params.$top = queryParams.$top;
       if (queryParams?.$skip) params.$skip = queryParams.$skip;
@@ -109,13 +116,15 @@ export function useStudentStats(filter?: string) {
       const client = getIdempiereClient();
 
       // Query total and active stats in parallel
+      // IMPORTANT: iDempiere API defaults to IsActive=true only.
+      // We must explicitly request both active and inactive records for total count.
+      const showAllFilter = "IsActive eq true OR IsActive eq false";
+      const totalFilter = filter ? `(${showAllFilter}) and (${filter})` : showAllFilter;
+
       const [totalResult, activeResult] = await Promise.all([
-        // Total students
-        client.query<ODataResponse<CBPartner>>(
-          "/models/C_BPartner",
-          filter ? { $filter: filter, $top: 0 } : { $top: 0 },
-        ),
-        // Active students
+        // Total students (including inactive)
+        client.query<ODataResponse<CBPartner>>("/models/C_BPartner", { $filter: totalFilter, $top: 0 }),
+        // Active students only
         client.query<ODataResponse<CBPartner>>("/models/C_BPartner", {
           $filter: filter ? `${filter} and IsActive eq true` : "IsActive eq true",
           $top: 0,
