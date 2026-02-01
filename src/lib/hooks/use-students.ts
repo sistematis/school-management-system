@@ -88,8 +88,8 @@ export function useStudents({ queryParams, enabled = true }: UseStudentsOptions 
       };
     },
     enabled: isAuthenticated && enabled,
-    staleTime: 0, // Always refetch when queryKey changes
-    gcTime: 0, // Don't cache data - immediately garbage collect
+    staleTime: 1000 * 5, // 5 seconds - consider data fresh for 5 seconds
+    gcTime: 1000 * 60, // 1 minute - keep data in cache for 1 minute
   });
 }
 
@@ -119,11 +119,14 @@ export function useStudentStats(filter?: string) {
       // IMPORTANT: iDempiere API defaults to IsActive=true only.
       // We must explicitly request both active and inactive records for total count.
       const showAllFilter = "IsActive eq true OR IsActive eq false";
-      const totalFilter = filter ? `(${showAllFilter}) and (${filter})` : showAllFilter;
 
       const [totalResult, activeResult] = await Promise.all([
         // Total students (including inactive)
-        client.query<ODataResponse<CBPartner>>("/models/C_BPartner", { $filter: totalFilter, $top: 0 }),
+        // If there's a user filter, combine it with showAllFilter
+        client.query<ODataResponse<CBPartner>>("/models/C_BPartner", {
+          $filter: filter ? `${filter} and ${showAllFilter}` : showAllFilter,
+          $top: 0,
+        }),
         // Active students only
         client.query<ODataResponse<CBPartner>>("/models/C_BPartner", {
           $filter: filter ? `${filter} and IsActive eq true` : "IsActive eq true",

@@ -336,9 +336,11 @@ export class BusinessPartnerService extends IdempiereBaseService<BusinessPartner
    */
   async getStudentByIdWithExpand(bpartnerId: number): Promise<BusinessPartner | null> {
     try {
+      // Use comma-separated $expand values (standard OData format)
       const response = await this.client.get<BusinessPartner>(`${this.endpoint}/${bpartnerId}`, {
-        $expand: "ad_user,c_bpartner_location,c_bp_bankaccount",
+        $expand: "ad_user,c_bpartner_location",
       });
+
       return response;
     } catch (error) {
       console.error(`Failed to fetch ${this.endpoint}/${bpartnerId} with expand:`, error);
