@@ -250,7 +250,7 @@ export default function StudentsPage() {
     },
   ];
 
-  // Loading state
+  // Loading state - matches actual UI structure
   if (isLoadingStudents && !tableData.length) {
     return (
       <div className="space-y-6">
@@ -265,7 +265,50 @@ export default function StudentsPage() {
           </Button>
         </div>
         <DataTableStats stats={statCards} isLoading={true} />
-        <DataTableSkeleton rowCount={PAGE_SIZE} />
+        {/* Data Table Skeleton - matches actual UI structure with border container */}
+        <div className="flex flex-col gap-0 rounded-md border bg-card">
+          {/* Toolbar skeleton */}
+          <div className="border-b p-4 flex items-center justify-between">
+            <div className="flex flex-1 items-center space-x-2">
+              <div className="h-8 w-[150px] lg:w-[250px] animate-pulse rounded-md bg-muted" />
+              <div className="h-8 w-[120px] animate-pulse rounded-md bg-muted" />
+            </div>
+            <div className="h-8 w-[100px] animate-pulse rounded-md bg-muted" />
+          </div>
+
+          {/* Table skeleton */}
+          <div className="relative w-full overflow-auto">
+            <div className="border-b">
+              {/* Header row */}
+              <div className="flex gap-4 border-b px-4 py-3">
+                <div className="h-10 w-10 shrink-0 animate-pulse rounded-md bg-muted" />
+                <div className="h-10 flex-1 animate-pulse rounded-md bg-muted" />
+                <div className="h-10 flex-1 animate-pulse rounded-md bg-muted" />
+                <div className="h-10 flex-1 animate-pulse rounded-md bg-muted" />
+                <div className="h-10 flex-1 animate-pulse rounded-md bg-muted" />
+              </div>
+              {/* Data rows */}
+              {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                <div key={`row-${i}`} className="flex gap-4 border-b px-4 py-3 last:border-0">
+                  <div className="h-10 w-10 shrink-0 animate-pulse rounded-md bg-muted" />
+                  <div className="h-10 flex-1 animate-pulse rounded-md bg-muted" />
+                  <div className="h-10 flex-1 animate-pulse rounded-md bg-muted" />
+                  <div className="h-10 flex-1 animate-pulse rounded-md bg-muted" />
+                  <div className="h-10 flex-1 animate-pulse rounded-md bg-muted" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Pagination skeleton */}
+          <div className="border-t p-4 flex items-center justify-between">
+            <div className="h-9 w-[150px] animate-pulse rounded-md bg-muted" />
+            <div className="flex gap-2">
+              <div className="h-9 w-[80px] animate-pulse rounded-md bg-muted" />
+              <div className="h-9 w-[80px] animate-pulse rounded-md bg-muted" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

@@ -281,7 +281,7 @@ const DataTableFacetedFilterComponent = forwardRef<DataTableFacetedFilterRef, Da
                                 } as const
                               }
                               side="bottom"
-                              align="end"
+                              align="center"
                               sideOffset={4}
                               onChange={(range) => {
                                 const otherFilters = pendingFilters.filter((f) => f.field !== name);

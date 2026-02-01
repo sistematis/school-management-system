@@ -529,7 +529,7 @@ export function DateRangePicker({
         side={side}
         sideOffset={sideOffset}
       >
-        <div className="grid grid-cols-[240px_1fr_1fr] grid-rows-[auto_auto_auto_auto] gap-0">
+        <div className="grid grid-cols-[1fr_1fr_1fr] grid-rows-[auto_auto_auto_auto] gap-0">
           {/* Top Row: Left Panel, Center Top, Right Top */}
           {/* Left Panel: Quick Presets - spans all rows */}
           <div className="flex flex-col space-y-1 border-r border-gray-200 pr-8 pl-2 row-span-4">
@@ -548,7 +548,7 @@ export function DateRangePicker({
                   type="button"
                   onClick={() => handlePresetClick(preset)}
                   className={cn(
-                    "grid grid-cols-[80px_1fr] gap-2 px-2 py-1.5 text-xs font-medium text-left rounded-md transition-colors",
+                    "grid grid-cols-[80px_1fr] gap-2 px-2 py-1.5 text-sm font-medium text-left rounded-md transition-colors",
                     "hover:bg-accent",
                     !isSelected && "hover:text-accent-foreground",
                     isSelected && "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -557,7 +557,7 @@ export function DateRangePicker({
                   <span className="font-medium text-left">{preset.label}</span>
                   {rangeText && (
                     <span className={cn(
-                      "text-xs text-left transition-colors",
+                      "text-sm text-left transition-colors",
                       isSelected ? "text-primary-foreground" : "text-muted-foreground"
                     )}>
                       {rangeText}
