@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ActiveFilter, FilterSchema } from "@/lib/data-table/filter.types";
 
-import { DataTableFacetedFilter } from "./data-table-faceted-filter";
+import { DataTableFacetedFilter, type DataTableFacetedFilterRef } from "./data-table-faceted-filter";
 import { DataTableViewOptions } from "./data-table-view-options";
 
 export interface DataTableToolbarProps<TData> {
@@ -19,6 +19,7 @@ export interface DataTableToolbarProps<TData> {
   filterSchema?: FilterSchema;
   activeFilters: ActiveFilter[];
   onFiltersChange: (filters: ActiveFilter[]) => void;
+  filterRef?: React.MutableRefObject<DataTableFacetedFilterRef | null>;
   searchableField?: string;
   searchValue: string;
   onSearchChange: (value: string) => void;
@@ -31,6 +32,7 @@ export function DataTableToolbar<TData>({
   filterSchema,
   activeFilters,
   onFiltersChange,
+  filterRef,
   searchableField,
   searchValue,
   onSearchChange,
@@ -123,6 +125,7 @@ export function DataTableToolbar<TData>({
         />
         {filterSchema && (
           <DataTableFacetedFilter
+            ref={filterRef}
             schema={filterSchema}
             activeFilters={activeFilters}
             onFiltersChange={onFiltersChange}

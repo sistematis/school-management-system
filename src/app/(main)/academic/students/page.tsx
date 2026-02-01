@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -19,6 +19,7 @@ import { StudentDetailDrawer } from "@/components/students";
 import { Button } from "@/components/ui/button";
 import type { CBPartner } from "@/lib/api/idempiere/models/c-bpartner";
 import { studentFilterSchema } from "@/lib/api/idempiere/models/c-bpartner";
+import type { ActiveFilter } from "@/lib/data-table/filter.types";
 import { useODataQuery } from "@/lib/data-table/use-odata-query";
 import { useTanStackTable } from "@/lib/data-table/use-tanstack-table";
 import { useStudentStats, useStudents } from "@/lib/hooks/use-students";
@@ -38,7 +39,7 @@ export default function StudentsPage() {
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [_selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [studentDetails, setStudentDetails] = useState<CBPartner | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
@@ -107,6 +108,18 @@ export default function StudentsPage() {
       [columnId]: false,
     }));
   }, []);
+
+  // Ref to access filter component methods
+  const filterRef = useRef<import("@/components/data-table/data-table-faceted-filter").DataTableFacetedFilterRef>(null);
+
+  // Handle filter changes from the filter component
+  const handleFiltersChange = useCallback(
+    (filters: ActiveFilter[]) => {
+      // Sync to URL (only called when Popover closes)
+      setActiveFilters(filters);
+    },
+    [setActiveFilters],
+  );
 
   // View details handler - fetch student details with expanded relations
   const handleViewDetails = useCallback(async (studentId: string) => {
@@ -301,7 +314,8 @@ export default function StudentsPage() {
             table={table}
             filterSchema={studentFilterSchema}
             activeFilters={activeFilters}
-            onFiltersChange={setActiveFilters}
+            onFiltersChange={handleFiltersChange}
+            filterRef={filterRef}
             searchableField="Name"
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}

@@ -189,7 +189,7 @@ export type BusinessPartner = CBPartner;
 // Filterable Fields Metadata (for Dynamic Data Table)
 // =============================================================================
 
-import { AlertTriangle, Briefcase, Cake, Calendar, CheckCircle, Globe, Mail, Phone, Store, User } from "lucide-react";
+import { AlertTriangle, Briefcase, Calendar, CheckCircle, Mail, Phone, Store, User } from "lucide-react";
 
 /**
  * Filterable field metadata for C_BPartner
@@ -246,25 +246,7 @@ export const CBPartnerFilterableFields = {
     icon: Mail,
   },
 
-  // Enum-like filters (predefined options)
-  Ad_Language: {
-    label: "Language",
-    type: "enum" as const,
-    operators: ["eq"] as const,
-    options: [
-      { label: "English", value: "en_US" },
-      { label: "Indonesian", value: "id_ID" },
-    ],
-    icon: Globe,
-  },
-
-  // Date filters
-  Birthday: {
-    label: "Birthday",
-    type: "date" as const,
-    operators: ["eq", "gt", "lt"] as const,
-    icon: Cake,
-  },
+  // Date filters (Birthday excluded - not supported by iDempiere OData API)
   Created: {
     label: "Created Date",
     type: "date" as const,

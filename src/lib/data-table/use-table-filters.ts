@@ -42,15 +42,16 @@ export function useTableFilters({ schema }: UseTableFiltersOptions): UseTableFil
     const filters: ActiveFilter[] = [];
     searchParams.forEach((value, key) => {
       if (key.startsWith(`${FILTER_PARAM_PREFIX}[`) || key.startsWith(`${FILTER_PARAM_PREFIX}%5B`)) {
-        // Decode URL-encoded keys and extract field name
+        // Decode URL-encoded keys and extract field name and operator
         const decodedKey = decodeURIComponent(key);
-        const match = decodedKey.match(/\[([^\]]+)\]/);
+        // Match patterns like f[Created] or f[Created][ge] or f[Created][le]
+        const match = decodedKey.match(/\[([^\]]+)\](?:\[([^\]]+)\])?/);
         if (match) {
           const field = match[1];
-          const metadata = schema.metadata[field];
+          const operator = match[2] || schema.metadata[field]?.operators?.[0] || "eq";
           filters.push({
             field,
-            operator: metadata?.operators?.[0] || "eq",
+            operator: operator as ActiveFilter["operator"],
             value,
           });
         }
@@ -75,15 +76,32 @@ export function useTableFilters({ schema }: UseTableFiltersOptions): UseTableFil
         }
       });
 
+      // Group filters by field to determine if we need operator suffix
+      const fieldGrouping = new Map<string, ActiveFilter[]>();
+      filters.forEach((filter) => {
+        if (!fieldGrouping.has(filter.field)) {
+          fieldGrouping.set(filter.field, []);
+        }
+        fieldGrouping.get(filter.field)?.push(filter);
+      });
+
       // Add new filter params
       filters.forEach((filter) => {
-        params.set(`${FILTER_PARAM_PREFIX}[${filter.field}]`, String(filter.value));
+        const fieldFilters = fieldGrouping.get(filter.field) || [];
+        const defaultOperator = schema.metadata[filter.field]?.operators?.[0] || "eq";
+        const needsOperatorSuffix = fieldFilters.length > 1 || filter.operator !== defaultOperator;
+
+        if (needsOperatorSuffix) {
+          params.set(`${FILTER_PARAM_PREFIX}[${filter.field}][${filter.operator}]`, String(filter.value));
+        } else {
+          params.set(`${FILTER_PARAM_PREFIX}[${filter.field}]`, String(filter.value));
+        }
       });
 
       // Use replace instead of push to avoid adding to history and causing remounts
       router.replace(`?${params.toString()}`, { scroll: false });
     },
-    [searchParams, router],
+    [searchParams, router, schema],
   );
 
   const setSearchQuery = useCallback(
