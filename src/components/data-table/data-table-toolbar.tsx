@@ -125,6 +125,7 @@ export function DataTableToolbar<TData>({
         />
         {filterSchema && (
           <DataTableFacetedFilter
+            key={JSON.stringify(activeFilters)}
             ref={filterRef}
             schema={filterSchema}
             activeFilters={activeFilters}
@@ -132,7 +133,18 @@ export function DataTableToolbar<TData>({
           />
         )}
         {isFiltered && (
-          <Button variant="ghost" onClick={() => onFiltersChange([])} className="h-8 px-2 lg:px-3">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              // Clear pending filters in the filter component
+              if (filterRef?.current) {
+                filterRef.current.clearPendingFilters();
+              }
+              // Clear active filters via the provided callback
+              onFiltersChange([]);
+            }}
+            className="h-8 px-2 lg:px-3"
+          >
             Reset
             <X className="ml-2 h-4 w-4" />
           </Button>

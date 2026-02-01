@@ -88,7 +88,7 @@ const DataTableFacetedFilterComponent = forwardRef<DataTableFacetedFilterRef, Da
       // Mark that the popover should stay open
       shouldBeOpenRef.current = true;
 
-      // Update pending filters for real-time data refresh
+      // Update pending filters
       const existingIndex = pendingFilters.findIndex((f) => f.field === field && f.value === value);
 
       let newFilters: ActiveFilter[];
@@ -175,20 +175,68 @@ const DataTableFacetedFilterComponent = forwardRef<DataTableFacetedFilterRef, Da
                   {activeCount}
                 </Badge>
                 <div className="hidden space-x-1 lg:flex">
-                  {activeCount > 2 ? (
+                  {activeCount > 5 ? (
                     <Badge variant="secondary" className="rounded-sm px-1 font-normal">
                       {activeCount} selected
                     </Badge>
                   ) : (
-                    (open ? pendingFilters : activeFilters).map((filter) => (
-                      <Badge
-                        key={`${filter.field}-${filter.value}`}
-                        variant="secondary"
-                        className="rounded-sm px-1 font-normal"
-                      >
-                        {schema.metadata[filter.field]?.label || filter.field}
-                      </Badge>
-                    ))
+                    (() => {
+                      const filters = open ? pendingFilters : activeFilters;
+                      // Group date range filters by field to show single badge
+                      const dateRangeGroups = new Map<string, { from?: string; to?: string }>();
+                      const nonDateFilters: typeof filters = [];
+
+                      filters.forEach((filter) => {
+                        const metadata = schema.metadata[filter.field];
+                        if (metadata?.type === "date") {
+                          if (!dateRangeGroups.has(filter.field)) {
+                            dateRangeGroups.set(filter.field, {});
+                          }
+                          const group = dateRangeGroups.get(filter.field);
+                          if (group) {
+                            if (filter.operator === "ge") {
+                              group.from = filter.value as string;
+                            } else if (filter.operator === "le") {
+                              group.to = filter.value as string;
+                            }
+                          }
+                        } else {
+                          nonDateFilters.push(filter);
+                        }
+                      });
+
+                      return (
+                        <>
+                          {nonDateFilters.map((filter) => (
+                            <Badge
+                              key={`${filter.field}-${filter.operator}-${filter.value}`}
+                              variant="secondary"
+                              className="rounded-sm px-1 font-normal"
+                            >
+                              {schema.metadata[filter.field]?.label || filter.field}
+                            </Badge>
+                          ))}
+                          {Array.from(dateRangeGroups.entries()).map(([field, range]) => (
+                            <Badge
+                              key={`${field}-date-range`}
+                              variant="secondary"
+                              className="rounded-sm px-1 font-normal"
+                            >
+                              {schema.metadata[field]?.label || field}
+                              {range.from && range.to && range.from !== range.to
+                                ? `: ${range.from} - ${range.to}`
+                                : range.from && range.to
+                                  ? `: ${range.from}`
+                                  : range.from
+                                    ? `: ≥${range.from}`
+                                    : range.to
+                                      ? `: ≤${range.to}`
+                                      : ""}
+                            </Badge>
+                          ))}
+                        </>
+                      );
+                    })()
                   )}
                 </div>
               </>
@@ -240,15 +288,22 @@ const DataTableFacetedFilterComponent = forwardRef<DataTableFacetedFilterRef, Da
                                 const newFilters: typeof pendingFilters = [];
 
                                 if (range.from) {
-                                  newFilters.push({ field: name, operator: "ge", value: range.from });
+                                  newFilters.push({
+                                    field: name,
+                                    operator: "ge",
+                                    value: range.from,
+                                  });
                                 }
                                 if (range.to) {
-                                  newFilters.push({ field: name, operator: "le", value: range.to });
+                                  newFilters.push({
+                                    field: name,
+                                    operator: "le",
+                                    value: range.to,
+                                  });
                                 }
 
                                 const updatedFilters = [...otherFilters, ...newFilters];
                                 setPendingFilters(updatedFilters);
-                                // Parent polls for pending filter changes via ref for real-time data refresh
                               }}
                             />
                           </div>

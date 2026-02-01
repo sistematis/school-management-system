@@ -115,7 +115,7 @@ export default function StudentsPage() {
   // Handle filter changes from the filter component
   const handleFiltersChange = useCallback(
     (filters: ActiveFilter[]) => {
-      // Sync to URL (only called when Popover closes)
+      // Sync to URL (called when filters change)
       setActiveFilters(filters);
     },
     [setActiveFilters],

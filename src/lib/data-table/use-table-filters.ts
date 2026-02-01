@@ -69,12 +69,18 @@ export function useTableFilters({ schema }: UseTableFiltersOptions): UseTableFil
       const params = new URLSearchParams(searchParams.toString());
 
       // Remove existing filter params (both encoded and unencoded forms)
+      // Collect keys to delete first to avoid modifying during iteration
+      const keysToDelete: string[] = [];
       params.forEach((_, key) => {
         const decodedKey = decodeURIComponent(key);
         if (decodedKey.startsWith(`${FILTER_PARAM_PREFIX}[`)) {
-          params.delete(key);
+          keysToDelete.push(key);
         }
       });
+      // Delete all collected keys after iteration completes
+      for (const key of keysToDelete) {
+        params.delete(key);
+      }
 
       // Group filters by field to determine if we need operator suffix
       const fieldGrouping = new Map<string, ActiveFilter[]>();
