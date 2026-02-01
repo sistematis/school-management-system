@@ -55,6 +55,41 @@ function formatDisplayDate(dateStr: string): string {
   });
 }
 
+/**
+ * Format date range for preset display as "2 Feb - 8 Feb 2026"
+ * Single day shows as "2 Feb 2026"
+ * Year only shown on the end date if same year
+ */
+function formatPresetDateRange(from: string, to: string): string {
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+
+  const dayMonth = fromDate.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+  const year = fromDate.getFullYear();
+
+  // If same day (Today, Yesterday), show single date: "2 Feb 2026"
+  if (from === to) {
+    return `${dayMonth} ${year}`;
+  }
+
+  const dayMonthTo = toDate.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+  const yearTo = toDate.getFullYear();
+
+  // If same year, show "2 Feb - 8 Feb 2026"
+  if (fromDate.getFullYear() === toDate.getFullYear()) {
+    return `${dayMonth} - ${dayMonthTo} ${yearTo}`;
+  }
+
+  // Different years, show "2 Feb 2025 - 8 Feb 2026"
+  return `${dayMonth} ${year} - ${dayMonthTo} ${yearTo}`;
+}
+
 function getMonthData(year: number, month: number) {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -295,10 +330,10 @@ function Calendar({
         onClick={() => handleDateClick(day)}
         className={cn(
           "h-10 w-10 text-sm font-medium rounded-md transition-colors",
-          "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50",
-          selected && "bg-blue-500 text-white hover:bg-blue-600",
-          inRange && !selected && "bg-blue-100",
-          isCurrent && !selected && "border-2 border-pink-500",
+          "hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/50",
+          selected && "bg-primary text-primary-foreground hover:bg-primary/90",
+          inRange && !selected && "bg-primary/10",
+          isCurrent && !selected && "border-2 border-primary",
         )}
       >
         {day}
@@ -362,7 +397,9 @@ export function DateRangePicker({
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [toCalendarMonth, setToCalendarMonth] = useState(new Date().getMonth());
-  const [toCalendarYear, setToCalendarYear] = useState(new Date().getFullYear());
+  const [toCalendarYear, setToCalendarYear] = useState(
+    new Date().getFullYear(),
+  );
   // Track pending selection that hasn't been confirmed yet
   const [pendingValue, setPendingValue] = useState<DateRange>(value || {});
 
@@ -386,7 +423,11 @@ export function DateRangePicker({
     setCalendarYear(selectedDate.getFullYear());
 
     // Update pending "from" date
-    setPendingValue((prev) => ({ ...prev, from: dateStr, to: prev?.to || value?.to }));
+    setPendingValue((prev) => ({
+      ...prev,
+      from: dateStr,
+      to: prev?.to || value?.to,
+    }));
   };
 
   const handleToDateSelect = (dateStr: string) => {
@@ -396,7 +437,11 @@ export function DateRangePicker({
     setToCalendarYear(selectedDate.getFullYear());
 
     // Update pending "to" date
-    setPendingValue((prev) => ({ ...prev, from: prev?.from || value?.from, to: dateStr }));
+    setPendingValue((prev) => ({
+      ...prev,
+      from: prev?.from || value?.from,
+      to: dateStr,
+    }));
   };
 
   const handlePresetClick = (preset: (typeof PRESETS)[0]) => {
@@ -435,7 +480,8 @@ export function DateRangePicker({
     setPendingValue({});
   };
 
-  const currentValue = pendingValue?.from || pendingValue?.to ? pendingValue : value;
+  const currentValue =
+    pendingValue?.from || pendingValue?.to ? pendingValue : value;
 
   return (
     <Popover
@@ -483,24 +529,47 @@ export function DateRangePicker({
         side={side}
         sideOffset={sideOffset}
       >
-        <div className="grid grid-cols-[140px_1fr_1fr] grid-rows-[auto_auto_auto_auto] gap-0">
+        <div className="grid grid-cols-[240px_1fr_1fr] grid-rows-[auto_auto_auto_auto] gap-0">
           {/* Top Row: Left Panel, Center Top, Right Top */}
           {/* Left Panel: Quick Presets - spans all rows */}
-          <div className="flex flex-col gap-2 border-r border-gray-200 pr-4 row-span-4">
-            {PRESETS.map((preset) => (
-              <button
-                key={preset.label}
-                type="button"
-                onClick={() => handlePresetClick(preset)}
-                className="px-3 py-2 text-xs font-medium text-left text-gray-700 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                {preset.label}
-              </button>
-            ))}
+          <div className="flex flex-col space-y-1 border-r border-gray-200 pr-8 pl-2 row-span-4">
+            {PRESETS.map((preset) => {
+              const range = preset.range();
+              const rangeText =
+                range.from && range.to
+                  ? formatPresetDateRange(range.from, range.to)
+                  : range.from
+                    ? formatDisplayDate(range.from)
+                    : "";
+              const isSelected = currentValue?.from === range?.from && currentValue?.to === range?.to;
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => handlePresetClick(preset)}
+                  className={cn(
+                    "grid grid-cols-[80px_1fr] gap-2 px-2 py-1.5 text-xs font-medium text-left rounded-md transition-colors",
+                    "hover:bg-accent",
+                    !isSelected && "hover:text-accent-foreground",
+                    isSelected && "bg-primary text-primary-foreground hover:bg-primary/90"
+                  )}
+                >
+                  <span className="font-medium text-left">{preset.label}</span>
+                  {rangeText && (
+                    <span className={cn(
+                      "text-xs text-left transition-colors",
+                      isSelected ? "text-primary-foreground" : "text-muted-foreground"
+                    )}>
+                      {rangeText}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Center Top: From Date Calendar */}
-          <div className="flex flex-col border-r border-gray-200 pr-4 row-span-3">
+          <div className="flex flex-col border-r border-gray-200 pr-8 pl-6 row-span-3">
             <Calendar
               month={calendarMonth}
               year={calendarYear}
@@ -511,7 +580,7 @@ export function DateRangePicker({
           </div>
 
           {/* Right Top: To Date Calendar */}
-          <div className="flex flex-col row-span-3">
+          <div className="flex flex-col pl-6 row-span-3">
             <Calendar
               month={toCalendarMonth}
               year={toCalendarYear}
@@ -523,23 +592,27 @@ export function DateRangePicker({
 
           {/* Bottom Row: Center Bottom + Right Bottom */}
           {/* Center Bottom: From Date & To Date Fields (side by side) */}
-          <div className="col-start-2 row-start-4 border-t border-gray-200 pt-4 pr-4 pl-4">
+          <div className="col-start-2 row-start-4 border-t border-gray-200 pt-4 pr-4 pl-6">
             <div className="flex items-center gap-2">
               {/* From Date Field */}
               <div className="flex-1">
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-center">
-                  <div className="text-sm text-gray-900 text-center">
-                    {currentValue?.from ? formatDisplayDate(currentValue.from) : "-"}
+                <div className="p-2 border border-gray-200 rounded-md text-center">
+                  <div className="text-sm text-foreground text-center">
+                    {currentValue?.from
+                      ? formatDisplayDate(currentValue.from)
+                      : "-"}
                   </div>
                 </div>
               </div>
               {/* Separator */}
-              <span className="text-gray-400 font-medium">-</span>
+              <span className="text-muted-foreground font-medium">-</span>
               {/* To Date Field */}
               <div className="flex-1">
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-center">
-                  <div className="text-sm text-gray-900 text-center">
-                    {currentValue?.to ? formatDisplayDate(currentValue.to) : "-"}
+                <div className="p-2 border border-gray-200 rounded-md text-center">
+                  <div className="text-sm text-foreground text-center">
+                    {currentValue?.to
+                      ? formatDisplayDate(currentValue.to)
+                      : "-"}
                   </div>
                 </div>
               </div>
@@ -547,7 +620,7 @@ export function DateRangePicker({
           </div>
 
           {/* Right Bottom: Action Buttons */}
-          <div className="col-start-3 row-start-4 border-t border-gray-200 pt-4">
+          <div className="col-start-3 row-start-4 border-t border-gray-200 pt-4 pl-6">
             <div className="flex flex-col justify-end h-full">
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-2">
@@ -559,11 +632,7 @@ export function DateRangePicker({
                 >
                   Cancel
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handleConfirm}
-                  className="px-4"
-                >
+                <Button size="sm" onClick={handleConfirm} className="px-4">
                   Confirm
                 </Button>
               </div>
