@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
@@ -312,7 +312,7 @@ function Calendar({
 
   // Empty cells before first day
   for (let i = 0; i < adjustedStartDay; i++) {
-    days.push(<div key={`empty-${i}`} className="h-10" />);
+    days.push(<div key={`empty-${i}`} className="h-8 w-8" />);
   }
 
   // Day cells
@@ -329,7 +329,7 @@ function Calendar({
         type="button"
         onClick={() => handleDateClick(day)}
         className={cn(
-          "h-10 w-10 text-sm font-medium rounded-md transition-colors",
+          "h-8 w-8 text-sm font-medium rounded-md transition-colors",
           "hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/50",
           selected && "bg-primary text-primary-foreground hover:bg-primary/90",
           inRange && !selected && "bg-primary/10",
@@ -344,23 +344,23 @@ function Calendar({
   return (
     <div className="w-full">
       {/* Month Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between px-1 mb-3">
         <button
           type="button"
           onClick={prevMonth}
-          className="p-1 text-gray-500 hover:text-primary transition-colors"
+          className="p-1 hover:bg-accent rounded transition-colors"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
-        <div className="text-lg font-semibold">
+        <div className="text-sm font-medium">
           {monthNames[month]} {year}
         </div>
         <button
           type="button"
           onClick={nextMonth}
-          className="p-1 text-gray-500 hover:text-primary transition-colors"
+          className="p-1 hover:bg-accent rounded transition-colors"
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
@@ -369,7 +369,7 @@ function Calendar({
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center text-sm font-medium text-gray-600"
+            className="h-6 text-center text-xs font-medium text-muted-foreground"
           >
             {day}
           </div>
@@ -401,12 +401,32 @@ export function DateRangePicker({
     new Date().getFullYear(),
   );
   // Track pending selection that hasn't been confirmed yet
-  const [pendingValue, setPendingValue] = useState<DateRange>(value || {});
+  const [pendingValue, setPendingValue] = useState<DateRange>({});
+
+  // Current value to use - pendingValue if set, otherwise actual value
+  const currentValue = useMemo(() => {
+    if (pendingValue?.from || pendingValue?.to) {
+      return pendingValue;
+    }
+    return value || {};
+  }, [pendingValue, value]);
+
+  // Sync calendar states with value when popover opens or value changes
+  useEffect(() => {
+    if (open && value?.from) {
+      const fromDate = new Date(value.from);
+      setCalendarMonth(fromDate.getMonth());
+      setCalendarYear(fromDate.getFullYear());
+
+      if (value?.to) {
+        const toDate = new Date(value.to);
+        setToCalendarMonth(toDate.getMonth());
+        setToCalendarYear(toDate.getFullYear());
+      }
+    }
+  }, [open, value?.from, value?.to]);
 
   const displayValue = useMemo(() => {
-    // Use pendingValue for display (if set), otherwise use actual value
-    const currentValue =
-      pendingValue?.from || pendingValue?.to ? pendingValue : value;
     if (currentValue?.from && currentValue?.to) {
       return `${formatDisplayDate(currentValue.from)} - ${formatDisplayDate(currentValue.to)}`;
     }
@@ -414,7 +434,7 @@ export function DateRangePicker({
       return `${formatDisplayDate(currentValue.from)} - ...`;
     }
     return "Select date range";
-  }, [value, pendingValue]);
+  }, [currentValue]);
 
   const handleFromDateSelect = (dateStr: string) => {
     const selectedDate = new Date(dateStr);
@@ -480,9 +500,6 @@ export function DateRangePicker({
     setPendingValue({});
   };
 
-  const currentValue =
-    pendingValue?.from || pendingValue?.to ? pendingValue : value;
-
   return (
     <Popover
       open={open}
@@ -524,15 +541,14 @@ export function DateRangePicker({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-auto p-4 max-w-4xl"
+        className="w-auto p-0"
         align={align}
         side={side}
         sideOffset={sideOffset}
       >
-        <div className="grid grid-cols-[1fr_1fr_1fr] grid-rows-[auto_auto_auto_auto] gap-0">
-          {/* Top Row: Left Panel, Center Top, Right Top */}
-          {/* Left Panel: Quick Presets - spans all rows */}
-          <div className="flex flex-col space-y-1 border-r border-gray-200 pr-8 pl-2 row-span-4">
+        <div className="flex">
+          {/* Left Panel: Quick Presets */}
+          <div className="flex flex-col space-y-1 border-r border-gray-200 p-2 min-w-[140px]">
             {PRESETS.map((preset) => {
               const range = preset.range();
               const rangeText =
@@ -541,25 +557,34 @@ export function DateRangePicker({
                   : range.from
                     ? formatDisplayDate(range.from)
                     : "";
-              const isSelected = currentValue?.from === range?.from && currentValue?.to === range?.to;
+              const isSelected =
+                currentValue?.from === range?.from &&
+                currentValue?.to === range?.to;
               return (
                 <button
                   key={preset.label}
                   type="button"
                   onClick={() => handlePresetClick(preset)}
                   className={cn(
-                    "grid grid-cols-[80px_1fr] gap-2 px-2 py-1.5 text-sm font-medium text-left rounded-md transition-colors",
+                    "grid grid-cols-[auto_1fr] gap-2 px-2 py-1.5 text-sm font-medium text-left rounded-md transition-colors",
                     "hover:bg-accent",
                     !isSelected && "hover:text-accent-foreground",
-                    isSelected && "bg-primary text-primary-foreground hover:bg-primary/90"
+                    isSelected &&
+                      "bg-primary text-primary-foreground hover:bg-primary/90",
                   )}
                 >
-                  <span className="font-medium text-left">{preset.label}</span>
+                  <span className="font-medium text-left whitespace-nowrap">
+                    {preset.label}
+                  </span>
                   {rangeText && (
-                    <span className={cn(
-                      "text-sm text-left transition-colors",
-                      isSelected ? "text-primary-foreground" : "text-muted-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-xs text-left transition-colors truncate",
+                        isSelected
+                          ? "text-primary-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {rangeText}
                     </span>
                   )}
@@ -568,71 +593,57 @@ export function DateRangePicker({
             })}
           </div>
 
-          {/* Center Top: From Date Calendar */}
-          <div className="flex flex-col border-r border-gray-200 pr-8 pl-6 row-span-3">
-            <Calendar
-              month={calendarMonth}
-              year={calendarYear}
-              value={currentValue}
-              onMonthChange={setCalendarMonth}
-              onDateSelect={handleFromDateSelect}
-            />
-          </div>
-
-          {/* Right Top: To Date Calendar */}
-          <div className="flex flex-col pl-6 row-span-3">
-            <Calendar
-              month={toCalendarMonth}
-              year={toCalendarYear}
-              value={currentValue}
-              onMonthChange={setToCalendarMonth}
-              onDateSelect={handleToDateSelect}
-            />
-          </div>
-
-          {/* Bottom Row: Center Bottom + Right Bottom */}
-          {/* Center Bottom: From Date & To Date Fields (side by side) */}
-          <div className="col-start-2 row-start-4 border-t border-gray-200 pt-4 pr-4 pl-6">
-            <div className="flex items-center gap-2">
-              {/* From Date Field */}
-              <div className="flex-1">
+          {/* Right Section: Calendars and Actions */}
+          <div className="flex">
+            {/* From Date Calendar */}
+            <div className="border-r border-gray-200 p-3 min-w-[220px]">
+              <Calendar
+                month={calendarMonth}
+                year={calendarYear}
+                value={currentValue}
+                onMonthChange={setCalendarMonth}
+                onDateSelect={handleFromDateSelect}
+              />
+              <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="p-2 border border-gray-200 rounded-md text-center">
-                  <div className="text-sm text-foreground text-center">
+                  <div className="text-sm text-foreground">
                     {currentValue?.from
                       ? formatDisplayDate(currentValue.from)
                       : "-"}
                   </div>
                 </div>
               </div>
-              {/* Separator */}
-              <span className="text-muted-foreground font-medium">-</span>
-              {/* To Date Field */}
-              <div className="flex-1">
+            </div>
+
+            {/* To Date Calendar */}
+            <div className="p-3 min-w-[220px]">
+              <Calendar
+                month={toCalendarMonth}
+                year={toCalendarYear}
+                value={currentValue}
+                onMonthChange={setToCalendarMonth}
+                onDateSelect={handleToDateSelect}
+              />
+              <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="p-2 border border-gray-200 rounded-md text-center">
-                  <div className="text-sm text-foreground text-center">
+                  <div className="text-sm text-foreground">
                     {currentValue?.to
                       ? formatDisplayDate(currentValue.to)
                       : "-"}
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Right Bottom: Action Buttons */}
-          <div className="col-start-3 row-start-4 border-t border-gray-200 pt-4 pl-6">
-            <div className="flex flex-col justify-end h-full">
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2">
+              <div className="mt-3 flex items-center justify-end gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleCancel}
-                  className="px-4"
+                  className="px-3"
                 >
                   Cancel
                 </Button>
-                <Button size="sm" onClick={handleConfirm} className="px-4">
+                <Button size="sm" onClick={handleConfirm} className="px-3">
                   Confirm
                 </Button>
               </div>
