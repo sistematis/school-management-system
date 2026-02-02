@@ -86,17 +86,17 @@ export function transformBPartnerToStudent(bPartner: BusinessPartner): Student {
   const initials = getInitials(firstName, lastName);
 
   return {
-    id: bPartner.Value,
+    id: bPartner.C_BPartner_ID?.toString() ?? bPartner.id?.toString() ?? "",
     firstName,
     lastName,
     initials,
     email: bPartner.EMail,
     phone: bPartner.Phone,
     grade: normalizeGrade(bPartner.C_BP_Group?.Name ?? bPartner.C_BP_Group?.identifier),
-    parentName: bPartner.AD_User?.[0]?.Name,
+    parentName: bPartner.ad_user?.[0]?.Name,
     dateOfBirth: bPartner.Birthday,
     status: bPartner.IsActive ? "active" : "inactive",
-    C_BPartner_ID: bPartner.C_BPartner_ID ?? bPartner.id,
+    C_BPartner_ID: bPartner.C_BPartner_ID ?? bPartner.id ?? 0,
     emergencyContact: bPartner.parentContact,
     allergies: bPartner.allergies,
     medicalConditions: bPartner.medicalConditions,

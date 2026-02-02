@@ -425,7 +425,9 @@ export interface BusinessPartner {
     "model-name"?: string;
     propertyLabel?: string;
   };
-  AD_User?: ADUser[];
+  ad_user?: ADUser[];
+  // Expanded relations (for detail view with $expand)
+  c_bpartner_location?: BPartnerLocation[];
   // Custom fields for school management
   parentContact?: string;
   emergencyContact?: string;
@@ -440,17 +442,63 @@ export interface BusinessPartner {
 }
 
 /**
- * iDempiere User/Contact entity (AD_User)
+ * C_BPartner_Location entity (expanded relation)
+ * Location/Address for Business Partner
+ */
+export interface BPartnerLocation {
+  id: number;
+  C_Location_ID?: {
+    id?: number;
+    identifier?: string;
+    "model-name"?: string;
+    Address1?: string;
+    Address2?: string;
+    Address3?: string;
+    Address4?: string;
+    City?: string;
+    Postal?: string;
+    C_Country_ID?: {
+      id: number;
+      identifier?: string;
+      "model-name"?: string;
+    };
+  };
+  Name?: string;
+  IsBillTo?: boolean;
+  IsShipTo?: boolean;
+  IsPayFrom?: boolean;
+  IsRemitTo?: boolean;
+  IsActive?: boolean;
+}
+
+/**
+ * iDempiere User/Contact entity (ad_user)
  * Linked to Business Partner for parent/guardian info
  */
 export interface ADUser {
-  AD_User_ID: number;
+  id: number;
+  uid?: string;
   Name: string;
+  Description?: string;
   EMail?: string;
   Phone?: string;
+  Phone2?: string;
   Birthday?: string;
+  Title?: string;
+  Comments?: string;
+  Value?: string;
   IsActive: boolean;
   C_BPartner_ID?: number;
+  C_Greeting_ID?: {
+    id: number;
+    identifier?: string;
+    "model-name"?: string;
+    propertyLabel?: string;
+  };
+  Created?: string;
+  Updated?: string;
+  CreatedBy?: number;
+  UpdatedBy?: number;
 }
 
 // =============================================================================
