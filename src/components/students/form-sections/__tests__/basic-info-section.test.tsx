@@ -33,8 +33,8 @@ function TestWrapper({ children, defaultValues = {} }: TestWrapperProps) {
 describe("BasicInfoSection", () => {
   it("renders all fields correctly", () => {
     const bpGroups = [
-      { id: 1, label: "Grade 10" },
-      { id: 2, label: "Grade 11" },
+      { id: 1, name: "Grade 10" },
+      { id: 2, name: "Grade 11" },
     ];
 
     render(
@@ -47,12 +47,12 @@ describe("BasicInfoSection", () => {
     expect(screen.getByLabelText("Full Name *")).toBeInTheDocument();
     expect(screen.getByLabelText("Middle/Last Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Student Group *")).toBeInTheDocument();
-    expect(screen.getByLabelText("Tax ID")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tax ID / National ID")).toBeInTheDocument();
     expect(screen.getByLabelText("Description")).toBeInTheDocument();
   });
 
   it("prefills data in edit mode", () => {
-    const bpGroups = [{ id: 1, label: "Grade 10" }];
+    const bpGroups = [{ id: 1, name: "Grade 10" }];
     const defaultValues = {
       value: "STU001",
       name: "John Doe",
@@ -77,8 +77,8 @@ describe("BasicInfoSection", () => {
 
   it("shows BP group options in dropdown", () => {
     const bpGroups = [
-      { id: 1, label: "Grade 10" },
-      { id: 2, label: "Grade 11" },
+      { id: 1, name: "Grade 10" },
+      { id: 2, name: "Grade 11" },
     ];
 
     render(

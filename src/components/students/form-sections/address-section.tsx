@@ -47,9 +47,8 @@ export function AddressSection({ countries = [], disabled = false }: AddressSect
           <FormItem>
             <FormLabel>Location Name *</FormLabel>
             <FormControl>
-              <Input placeholder="e.g., Home, Office" {...field} disabled={disabled} />
+              <Input placeholder="e.g., Home Address" {...field} disabled={disabled} />
             </FormControl>
-            <FormDescription>A name to identify this address</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -64,20 +63,18 @@ export function AddressSection({ countries = [], disabled = false }: AddressSect
             <FormLabel>Country *</FormLabel>
             <Select
               onValueChange={(value) => field.onChange(Number(value))}
-              defaultValue={field.value?.toString()}
+              value={field.value?.toString()}
               disabled={disabled}
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a country">
-                    {selectedCountry?.label || "Select a country"}
-                  </SelectValue>
+                  <SelectValue placeholder="Select country" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {countries.map((country) => (
                   <SelectItem key={country.id} value={country.id.toString()}>
-                    {country.label}
+                    {country.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -95,7 +92,7 @@ export function AddressSection({ countries = [], disabled = false }: AddressSect
           <FormItem className="md:col-span-2">
             <FormLabel>Address Line 1 *</FormLabel>
             <FormControl>
-              <Input placeholder="Street address, P.O. box, etc." {...field} disabled={disabled} />
+              <Input placeholder="Street address, line 1" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -110,7 +107,7 @@ export function AddressSection({ countries = [], disabled = false }: AddressSect
           <FormItem>
             <FormLabel>Address Line 2</FormLabel>
             <FormControl>
-              <Input placeholder="Apartment, suite, unit, building, floor, etc." {...field} disabled={disabled} />
+              <Input placeholder="Street address, line 2" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -125,7 +122,7 @@ export function AddressSection({ countries = [], disabled = false }: AddressSect
           <FormItem>
             <FormLabel>Address Line 3</FormLabel>
             <FormControl>
-              <Input placeholder="Additional address information" {...field} disabled={disabled} />
+              <Input placeholder="Street address, line 3" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -140,7 +137,7 @@ export function AddressSection({ countries = [], disabled = false }: AddressSect
           <FormItem>
             <FormLabel>Address Line 4</FormLabel>
             <FormControl>
-              <Input placeholder="Additional address information" {...field} disabled={disabled} />
+              <Input placeholder="Street address, line 4" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -155,7 +152,7 @@ export function AddressSection({ countries = [], disabled = false }: AddressSect
           <FormItem>
             <FormLabel>City *</FormLabel>
             <FormControl>
-              <Input placeholder="e.g., New York" {...field} disabled={disabled} />
+              <Input placeholder="e.g., Jakarta" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -170,7 +167,7 @@ export function AddressSection({ countries = [], disabled = false }: AddressSect
           <FormItem>
             <FormLabel>Postal Code</FormLabel>
             <FormControl>
-              <Input placeholder="e.g., 10001" {...field} disabled={disabled} />
+              <Input placeholder="e.g., 11553" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>

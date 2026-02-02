@@ -35,8 +35,8 @@ function TestWrapper({
 describe("AddressSection", () => {
   it("renders all fields correctly", () => {
     const countries = [
-      { id: 1, label: "United States" },
-      { id: 2, label: "Canada" },
+      { id: 1, name: "United States" },
+      { id: 2, name: "Canada" },
     ];
 
     render(
@@ -56,7 +56,7 @@ describe("AddressSection", () => {
   });
 
   it("prefills data in edit mode", () => {
-    const countries = [{ id: 1, label: "United States" }];
+    const countries = [{ id: 1, name: "United States" }];
     const defaultValues = {
       locationName: "Home",
       address1: "123 Main St",

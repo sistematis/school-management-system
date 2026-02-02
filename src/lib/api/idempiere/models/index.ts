@@ -5,6 +5,8 @@
  * untuk menghindari naming conflicts. Import langsung dari file masing-masing jika diperlukan.
  */
 
+// Re-export common types
+export type { CountryOption, GreetingOption } from "../common.types";
 // Export A_Asset
 export type {
   AAsset,

@@ -4,6 +4,26 @@
  */
 
 // =============================================================================
+// Option Types for Dropdowns
+// =============================================================================
+
+/**
+ * Simplified country option for dropdown/select components
+ */
+export interface CountryOption {
+  id: number;
+  name: string;
+}
+
+/**
+ * Simplified greeting option for dropdown/select components
+ */
+export interface GreetingOption {
+  id: number;
+  name: string;
+}
+
+// =============================================================================
 // Authentication Types
 // =============================================================================
 

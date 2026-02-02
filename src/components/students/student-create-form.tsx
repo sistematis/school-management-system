@@ -12,15 +12,14 @@ import { type Path, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Form } from "@/components/ui/form";
 import { getIdempiereClient } from "@/lib/api/idempiere/client";
 import type {
   ADRoleResponse,
   BPGroupOption,
   CBPGroupResponse,
+  CountryOption,
+  GreetingOption,
   RoleOption,
   StudentBPCreateResponse,
   StudentBPLocationCreateResponse,
@@ -30,6 +29,12 @@ import type {
   StudentUserRoleCreateResponse,
 } from "@/lib/api/idempiere/models";
 import { STUDENT_CREATION_STEPS, TOTAL_STUDENT_CREATION_STEPS } from "@/lib/api/idempiere/models";
+
+// Shared form section components
+import { AccountSection } from "./form-sections/account-section";
+import { AddressSection } from "./form-sections/address-section";
+import { BasicInfoSection } from "./form-sections/basic-info-section";
+import { RoleSection } from "./form-sections/role-section";
 
 // =============================================================================
 // Validation Schemas
@@ -162,534 +167,6 @@ function Stepper({ currentStep, steps }: StepperProps) {
 }
 
 // =============================================================================
-// Step Components
-// =============================================================================
-
-interface StepFormProps {
-  form: ReturnType<typeof useForm<StudentCreateFormValues>>;
-  isLoading?: boolean;
-  roles?: RoleOption[];
-  bpGroups?: BPGroupOption[];
-}
-
-/**
- * Step 1: Basic Information Form
- */
-function Step1Form({ form, isLoading, bpGroups = [] }: StepFormProps) {
-  const selectedBPGroup = bpGroups.find((g) => g.id === form.watch("step1.bpGroupId"));
-
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {/* Student ID / Code */}
-      <FormField
-        control={form.control}
-        name="step1.value"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Student ID *</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., 317201251162" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormDescription>Unique student identification code</FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Full Name */}
-      <FormField
-        control={form.control}
-        name="step1.name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Full Name *</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., John Doe" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Middle/Last Name */}
-      <FormField
-        control={form.control}
-        name="step1.name2"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Middle/Last Name</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., Smith" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Student Group */}
-      <FormField
-        control={form.control}
-        name="step1.bpGroupId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Student Group *</FormLabel>
-            <Select
-              onValueChange={(value) => field.onChange(Number(value))}
-              value={field.value?.toString()}
-              disabled={isLoading || bpGroups.length === 0}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder={bpGroups.length === 0 ? "Loading groups..." : "Select student group"} />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {bpGroups.map((group) => (
-                  <SelectItem key={group.id} value={group.id.toString()}>
-                    {group.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormDescription>
-              {selectedBPGroup ? <>Selected: {selectedBPGroup.name}</> : <>Select a student group for classification</>}
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Tax ID */}
-      <FormField
-        control={form.control}
-        name="step1.taxId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Tax ID / National ID</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., NIK/NISN" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Description */}
-      <FormField
-        control={form.control}
-        name="step1.description"
-        render={({ field }) => (
-          <FormItem className="md:col-span-2">
-            <FormLabel>Description</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Additional notes about the student..."
-                className="resize-none"
-                rows={2}
-                {...field}
-                disabled={isLoading}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-  );
-}
-
-/**
- * Step 2: Location Form
- */
-function Step2Form({ form, isLoading }: StepFormProps) {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {/* Location Name */}
-      <FormField
-        control={form.control}
-        name="step2.locationName"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Location Name *</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., Home Address" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Address Line 1 */}
-      <FormField
-        control={form.control}
-        name="step2.address1"
-        render={({ field }) => (
-          <FormItem className="md:col-span-2">
-            <FormLabel>Address Line 1 *</FormLabel>
-            <FormControl>
-              <Input placeholder="Street address, line 1" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Address Line 2 */}
-      <FormField
-        control={form.control}
-        name="step2.address2"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Address Line 2</FormLabel>
-            <FormControl>
-              <Input placeholder="Street address, line 2" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Address Line 3 */}
-      <FormField
-        control={form.control}
-        name="step2.address3"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Address Line 3</FormLabel>
-            <FormControl>
-              <Input placeholder="Street address, line 3" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Address Line 4 */}
-      <FormField
-        control={form.control}
-        name="step2.address4"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Address Line 4</FormLabel>
-            <FormControl>
-              <Input placeholder="Street address, line 4" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* City */}
-      <FormField
-        control={form.control}
-        name="step2.city"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>City *</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., Jakarta" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Postal Code */}
-      <FormField
-        control={form.control}
-        name="step2.postal"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Postal Code</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., 11553" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Country */}
-      <FormField
-        control={form.control}
-        name="step2.countryId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Country *</FormLabel>
-            <Select
-              onValueChange={(value) => field.onChange(Number(value))}
-              defaultValue={field.value?.toString()}
-              disabled={isLoading}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="209">Indonesia</SelectItem>
-                <SelectItem value="100">United States</SelectItem>
-                <SelectItem value="122">Malaysia</SelectItem>
-                <SelectItem value="180">Singapore</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-  );
-}
-
-/**
- * Step 3: Account Setup Form
- */
-function Step3Form({ form, isLoading }: StepFormProps) {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {/* Username */}
-      <FormField
-        control={form.control}
-        name="step3.username"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Username *</FormLabel>
-            <FormControl>
-              <Input placeholder="Login username" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormDescription>Used for system login</FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Password */}
-      <FormField
-        control={form.control}
-        name="step3.password"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Password *</FormLabel>
-            <FormControl>
-              <Input type="password" placeholder="Login password" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* User PIN */}
-      <FormField
-        control={form.control}
-        name="step3.userPin"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>User PIN</FormLabel>
-            <FormControl>
-              <Input placeholder="Optional PIN code" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Email */}
-      <FormField
-        control={form.control}
-        name="step3.email"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Email</FormLabel>
-            <FormControl>
-              <Input type="email" placeholder="student@example.com" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Phone */}
-      <FormField
-        control={form.control}
-        name="step3.phone"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Primary Phone</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., 08123456789" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Phone 2 */}
-      <FormField
-        control={form.control}
-        name="step3.phone2"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Secondary Phone</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., 08198765432" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Title */}
-      <FormField
-        control={form.control}
-        name="step3.title"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Title</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g., Mr., Ms., Dr." {...field} disabled={isLoading} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Greeting */}
-      <FormField
-        control={form.control}
-        name="step3.greetingId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Greeting *</FormLabel>
-            <Select
-              onValueChange={(value) => field.onChange(Number(value))}
-              value={field.value?.toString()}
-              disabled={isLoading}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select greeting" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="1000000">Dear</SelectItem>
-                <SelectItem value="1000001">Mr.</SelectItem>
-                <SelectItem value="1000002">Ms.</SelectItem>
-                <SelectItem value="1000003">Mrs.</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Birthday */}
-      <FormField
-        control={form.control}
-        name="step3.birthday"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Birthday *</FormLabel>
-            <FormControl>
-              <Input type="date" {...field} disabled={isLoading} />
-            </FormControl>
-            <FormDescription>Format: YYYY-MM-DD</FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Comments */}
-      <FormField
-        control={form.control}
-        name="step3.comments"
-        render={({ field }) => (
-          <FormItem className="md:col-span-2">
-            <FormLabel>Comments</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Additional notes..."
-                className="resize-none"
-                rows={2}
-                {...field}
-                disabled={isLoading}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-  );
-}
-
-/**
- * Step 4: Role Assignment Form
- */
-function Step4Form({ form, isLoading, roles = [] }: StepFormProps) {
-  const selectedRole = roles.find((r) => r.id === form.watch("step4.roleId"));
-
-  return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      {/* Info Box */}
-      {roles.length === 0 ? (
-        <div className="md:col-span-2 rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100">
-          <p className="text-sm font-medium">Loading available roles...</p>
-          <p className="text-muted-foreground text-sm">Please wait while we fetch the system roles from the server.</p>
-        </div>
-      ) : (
-        <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
-          <p className="text-sm font-medium">Final Step: Select System Role</p>
-          <p className="text-muted-foreground text-sm">
-            Choose a role for this student from the available options below, then click "Create Student" to complete the
-            registration.
-          </p>
-        </div>
-      )}
-
-      {/* Role */}
-      <FormField
-        control={form.control}
-        name="step4.roleId"
-        render={({ field }) => (
-          <FormItem className="md:col-span-2">
-            <FormLabel>System Role *</FormLabel>
-            <Select
-              onValueChange={(value) => field.onChange(Number(value))}
-              value={field.value?.toString()}
-              disabled={isLoading || roles.length === 0}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder={roles.length === 0 ? "Loading roles..." : "Select role"} />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {roles.map((role) => (
-                  <SelectItem key={role.id} value={role.id.toString()}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{role.name}</span>
-                      {role.description && <span className="text-muted-foreground text-xs">{role.description}</span>}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormDescription>
-              {selectedRole ? (
-                <>Selected: {selectedRole.name}</>
-              ) : (
-                <>Assign a system role to determine the student's access permissions</>
-              )}
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-  );
-}
-
-// =============================================================================
 // Main Form Component
 // =============================================================================
 
@@ -715,10 +192,33 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   const [roles, setRoles] = useState<RoleOption[]>([]);
   const [isBPGroupsLoading, setIsBPGroupsLoading] = useState(true);
   const [bpGroups, setBpGroups] = useState<BPGroupOption[]>([]);
+  const [isCountriesLoading, setIsCountriesLoading] = useState(false);
+  const [countries, setCountries] = useState<CountryOption[]>([]);
+  const [isGreetingsLoading, setIsGreetingsLoading] = useState(false);
+  const [greetings, setGreetings] = useState<GreetingOption[]>([]);
   const [_creationContext, setCreationContext] = useState<StudentCreationContext>({});
 
   // Track step transitions to prevent form submission during transition
   const isTransitioningRef = useRef(false);
+
+  // Initialize static data for countries and greetings
+  useEffect(() => {
+    // Static countries data (can be replaced with API call later)
+    setCountries([
+      { id: 209, name: "Indonesia" },
+      { id: 100, name: "United States" },
+      { id: 122, name: "Malaysia" },
+      { id: 180, name: "Singapore" },
+    ]);
+
+    // Static greetings data (can be replaced with API call later)
+    setGreetings([
+      { id: 1000000, name: "Dear" },
+      { id: 1000001, name: "Mr." },
+      { id: 1000002, name: "Ms." },
+      { id: 1000003, name: "Mrs." },
+    ]);
+  }, []);
 
   // Form setup
   const form = useForm<StudentCreateFormValues>({
@@ -1076,17 +576,17 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   const renderStepForm = useCallback(() => {
     switch (currentStep) {
       case 1:
-        return <Step1Form form={form} isLoading={isLoading} bpGroups={bpGroups} />;
+        return <BasicInfoSection bpGroups={bpGroups} mode="create" disabled={isLoading || isBPGroupsLoading} />;
       case 2:
-        return <Step2Form form={form} isLoading={isLoading} />;
+        return <AddressSection countries={countries} disabled={isLoading} />;
       case 3:
-        return <Step3Form form={form} isLoading={isLoading} />;
+        return <AccountSection greetings={greetings} showPasswordFields={true} disabled={isLoading} />;
       case 4:
-        return <Step4Form form={form} isLoading={isLoading} roles={roles} />;
+        return <RoleSection roles={roles} disabled={isLoading || isRolesLoading} />;
       default:
         return null;
     }
-  }, [currentStep, form, isLoading, roles, bpGroups]);
+  }, [currentStep, bpGroups, isBPGroupsLoading, countries, greetings, roles, isRolesLoading, isLoading]);
 
   // Calculate progress percentage
   const progressPercentage = useMemo(() => {

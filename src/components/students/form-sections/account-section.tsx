@@ -50,9 +50,9 @@ export function AccountSection({ greetings = [], showPasswordFields = true, disa
           <FormItem>
             <FormLabel>Username *</FormLabel>
             <FormControl>
-              <Input placeholder="e.g., john.doe" {...field} disabled={disabled} />
+              <Input placeholder="Login username" {...field} disabled={disabled} />
             </FormControl>
-            <FormDescription>Login username for the system</FormDescription>
+            <FormDescription>Used for system login</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -66,7 +66,7 @@ export function AccountSection({ greetings = [], showPasswordFields = true, disa
           <FormItem>
             <FormLabel>Email</FormLabel>
             <FormControl>
-              <Input type="email" placeholder="e.g., john.doe@example.com" {...field} disabled={disabled} />
+              <Input type="email" placeholder="student@example.com" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -82,7 +82,7 @@ export function AccountSection({ greetings = [], showPasswordFields = true, disa
             <FormItem>
               <FormLabel>Password *</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="Enter password" {...field} disabled={disabled} />
+                <Input type="password" placeholder="Login password" {...field} disabled={disabled} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -99,9 +99,8 @@ export function AccountSection({ greetings = [], showPasswordFields = true, disa
             <FormItem>
               <FormLabel>User PIN</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="Optional PIN code" {...field} disabled={disabled} />
+                <Input placeholder="Optional PIN code" {...field} disabled={disabled} />
               </FormControl>
-              <FormDescription>Optional PIN for quick access</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -114,23 +113,21 @@ export function AccountSection({ greetings = [], showPasswordFields = true, disa
         name="step3.greetingId"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Greeting</FormLabel>
+            <FormLabel>Greeting *</FormLabel>
             <Select
               onValueChange={(value) => field.onChange(Number(value))}
-              defaultValue={field.value?.toString()}
+              value={field.value?.toString()}
               disabled={disabled}
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a greeting">
-                    {selectedGreeting?.label || "Select a greeting"}
-                  </SelectValue>
+                  <SelectValue placeholder="Select greeting" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {greetings.map((greeting) => (
                   <SelectItem key={greeting.id} value={greeting.id.toString()}>
-                    {greeting.label}
+                    {greeting.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -148,7 +145,7 @@ export function AccountSection({ greetings = [], showPasswordFields = true, disa
           <FormItem>
             <FormLabel>Title</FormLabel>
             <FormControl>
-              <Input placeholder="e.g., Mr., Mrs., Ms., Dr." {...field} disabled={disabled} />
+              <Input placeholder="e.g., Mr., Ms., Dr." {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -163,7 +160,7 @@ export function AccountSection({ greetings = [], showPasswordFields = true, disa
           <FormItem>
             <FormLabel>Primary Phone</FormLabel>
             <FormControl>
-              <Input type="tel" placeholder="e.g., +1-555-123-4567" {...field} disabled={disabled} />
+              <Input placeholder="e.g., 08123456789" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -178,7 +175,7 @@ export function AccountSection({ greetings = [], showPasswordFields = true, disa
           <FormItem>
             <FormLabel>Secondary Phone</FormLabel>
             <FormControl>
-              <Input type="tel" placeholder="e.g., +1-555-987-6543" {...field} disabled={disabled} />
+              <Input placeholder="e.g., 08198765432" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -210,8 +207,9 @@ export function AccountSection({ greetings = [], showPasswordFields = true, disa
             <FormLabel>Comments</FormLabel>
             <FormControl>
               <Textarea
-                placeholder="Additional notes about this user account..."
-                className="min-h-24 resize-y"
+                placeholder="Additional notes..."
+                className="resize-none"
+                rows={2}
                 {...field}
                 disabled={disabled}
               />

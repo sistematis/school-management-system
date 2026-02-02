@@ -28,8 +28,8 @@ function TestWrapper({
 describe("RoleSection", () => {
   it("renders role field correctly", () => {
     const roles = [
-      { id: 1, label: "Student" },
-      { id: 2, label: "Teacher" },
+      { id: 1, name: "Student", description: "Student role" },
+      { id: 2, name: "Teacher", description: "Teacher role" },
     ];
 
     render(
@@ -43,8 +43,8 @@ describe("RoleSection", () => {
 
   it("prefills data in edit mode", () => {
     const roles = [
-      { id: 1, label: "Student" },
-      { id: 2, label: "Teacher" },
+      { id: 1, name: "Student", description: "Student role" },
+      { id: 2, name: "Teacher", description: "Teacher role" },
     ];
     const defaultValues = { roleId: 1 };
 

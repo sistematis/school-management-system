@@ -99,24 +99,25 @@ export function BasicInfoSection({ bpGroups = [], mode = "create", disabled = fa
             <FormLabel>Student Group *</FormLabel>
             <Select
               onValueChange={(value) => field.onChange(Number(value))}
-              defaultValue={field.value?.toString()}
+              value={field.value?.toString()}
               disabled={disabled}
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a student group">
-                    {selectedBPGroup?.label || "Select a student group"}
-                  </SelectValue>
+                  <SelectValue placeholder={bpGroups.length === 0 ? "Loading groups..." : "Select student group"} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {bpGroups.map((group) => (
                   <SelectItem key={group.id} value={group.id.toString()}>
-                    {group.label}
+                    {group.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <FormDescription>
+              {selectedBPGroup ? <>Selected: {selectedBPGroup.name}</> : <>Select a student group for classification</>}
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -128,9 +129,9 @@ export function BasicInfoSection({ bpGroups = [], mode = "create", disabled = fa
         name="step1.taxId"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Tax ID</FormLabel>
+            <FormLabel>Tax ID / National ID</FormLabel>
             <FormControl>
-              <Input placeholder="e.g., 123-45-6789" {...field} disabled={disabled} />
+              <Input placeholder="e.g., NIK/NISN" {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -146,8 +147,9 @@ export function BasicInfoSection({ bpGroups = [], mode = "create", disabled = fa
             <FormLabel>Description</FormLabel>
             <FormControl>
               <Textarea
-                placeholder="Additional notes about this student..."
-                className="min-h-24 resize-y"
+                placeholder="Additional notes about the student..."
+                className="resize-none"
+                rows={2}
                 {...field}
                 disabled={disabled}
               />

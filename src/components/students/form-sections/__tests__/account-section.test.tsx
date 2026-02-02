@@ -36,8 +36,8 @@ function TestWrapper({
 
 describe("AccountSection", () => {
   const greetings = [
-    { id: 1, label: "Mr." },
-    { id: 2, label: "Ms." },
+    { id: 1, name: "Mr." },
+    { id: 2, name: "Ms." },
   ];
 
   it("renders all fields in create mode", () => {
@@ -51,7 +51,7 @@ describe("AccountSection", () => {
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password *")).toBeInTheDocument();
     expect(screen.getByLabelText("User PIN")).toBeInTheDocument();
-    expect(screen.getByLabelText("Greeting")).toBeInTheDocument();
+    expect(screen.getByLabelText("Greeting *")).toBeInTheDocument();
     expect(screen.getByLabelText("Title")).toBeInTheDocument();
     expect(screen.getByLabelText("Primary Phone")).toBeInTheDocument();
     expect(screen.getByLabelText("Secondary Phone")).toBeInTheDocument();
