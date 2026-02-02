@@ -8,6 +8,8 @@
  * with full OData-style query support using QueryBuilder.
  */
 
+import type { ADUser } from "../models/ad-user";
+import type { CBPartner } from "../models/c-bpartner";
 import type { ExpandClause, FilterCondition, OrderByClause, QueryBuilder, QueryConfig, SortOrder } from "../query";
 import { and, filter, inFilter, methodFilter } from "../query";
 import { transformBPartnersToStudents, transformBPartnerToStudent, transformStudentToBPartner } from "../transformers";
@@ -333,15 +335,32 @@ export class BusinessPartnerService extends IdempiereBaseService<BusinessPartner
    * @example
    * const studentDetails = await service.getStudentByIdWithExpand(1000008);
    * // Returns student with ad_user[], c_bp_bankaccount[], c_bpartner_location[]
+   *
+   * NOTE: Contacts (ad_user) are fetched separately to include both active and inactive records.
+   * The default $expand only returns active records.
    */
   async getStudentByIdWithExpand(bpartnerId: number): Promise<BusinessPartner | null> {
     try {
-      // Use comma-separated $expand values (standard OData format)
-      const response = await this.client.get<BusinessPartner>(`${this.endpoint}/${bpartnerId}`, {
-        $expand: "ad_user,c_bpartner_location",
+      // Step 1: Get the business partner with locations expanded
+      const response = await this.client.get<unknown>(`${this.endpoint}/${bpartnerId}`, {
+        $expand: "c_bpartner_location",
       });
 
-      return response;
+      if (!response) {
+        return null;
+      }
+
+      // Step 2: Fetch all contacts (AD_User records) for this business partner
+      // IMPORTANT: Must explicitly include (IsActive eq true OR IsActive eq false)
+      // to override the iDempiere API's default filter that only returns active records
+      const contactsResponse = await this.client.get<{ records?: unknown[] }>("/models/AD_User", {
+        $filter: `C_BPartner_ID eq ${bpartnerId} AND (IsActive eq true OR IsActive eq false)`,
+      });
+
+      // Merge the contacts into the response using the correct property name
+      (response as CBPartner).ad_user = (contactsResponse.records ?? []) as ADUser[];
+
+      return response as unknown as BusinessPartner;
     } catch (error) {
       console.error(`Failed to fetch ${this.endpoint}/${bpartnerId} with expand:`, error);
       return null;
