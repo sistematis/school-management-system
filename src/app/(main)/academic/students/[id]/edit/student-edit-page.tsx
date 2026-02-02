@@ -20,13 +20,13 @@ import { getIdempiereClient } from "@/lib/api/idempiere/client";
 import type {
   ADRoleResponse,
   BPGroupOption,
+  CBPartner,
   CBPGroupResponse,
   CountryOption,
   GreetingOption,
   RoleOption,
 } from "@/lib/api/idempiere/models";
 import { getBusinessPartnerService } from "@/lib/api/idempiere/services/business-partner.service";
-import type { BusinessPartner } from "@/lib/api/idempiere/types";
 import { type StudentUpdateFormValues, studentUpdateSchema } from "@/lib/schemas/student-update.schema";
 
 // =============================================================================
@@ -45,15 +45,16 @@ interface StudentEditPageProps {
 /**
  * Transform API response to form values for all 4 steps
  */
-function transformApiToFormValues(businessPartner: BusinessPartner): StudentUpdateFormValues {
+function transformApiToFormValues(businessPartner: CBPartner): StudentUpdateFormValues {
   // Step 1: Basic Information
   const step1 = {
     value: businessPartner.Value || "",
     name: businessPartner.Name || "",
     name2: businessPartner.Name2 || "",
-    bpGroupId: businessPartner.C_BP_Group_ID || businessPartner.C_BP_Group?.id || 0,
+    // C_BP_Group_ID is an object with id property
+    bpGroupId: businessPartner.C_BP_Group_ID?.id || 0,
     description: businessPartner.Description || "",
-    taxId: "", // TaxID field not available in BusinessPartner type
+    taxId: "", // TaxID field not available in CBPartner type
   };
 
   // Step 2: Location - Get first location from C_BPartner_Location array
@@ -68,6 +69,7 @@ function transformApiToFormValues(businessPartner: BusinessPartner): StudentUpda
     address4: location?.Address4 || "",
     city: location?.City || "",
     postal: location?.Postal || "",
+    // C_Country_ID is an object with id property
     countryId: location?.C_Country_ID?.id || 209, // Default Indonesia
   };
 
@@ -109,7 +111,7 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
   // State
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [studentData, setStudentData] = useState<BusinessPartner | null>(null);
+  const [studentData, setStudentData] = useState<CBPartner | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   // Ref to track the latest request ID (for handling React StrictMode double effects)
@@ -185,18 +187,41 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
           })),
         );
 
-        // Fetch Countries
-        const countriesResponse = await client.get<{ records: { id: number; Name: string }[] }>("/models/c_country", {
-          $filter: "IsActive eq true",
-          $orderby: "Name asc",
-        });
-        setCountries(
-          countriesResponse.records.map((c) => ({
-            id: c.id,
-            name: c.Name,
-            code: c.Name,
-          })),
-        );
+        // Fetch Countries - use pagination to get all countries
+        // The API limits to 100 records per request, so we need to fetch in batches
+        const allCountries: { id: number; name: string; code: string }[] = [];
+        const pageSize = 100;
+        let hasMore = true;
+        let skip = 0;
+
+        while (hasMore) {
+          const response = await client.get<{ records: { id: number; Name: string }[]; "row-count": number }>(
+            "/models/c_country",
+            {
+              $filter: "IsActive eq true",
+              $orderby: "Name asc",
+              $top: pageSize,
+              $skip: skip,
+            },
+          );
+          allCountries.push(
+            ...response.records.map((c) => ({
+              id: c.id,
+              name: c.Name,
+              code: c.Name,
+            })),
+          );
+
+          // Check if we need to fetch more
+          const totalCount = response["row-count"] || 0;
+          hasMore = allCountries.length < totalCount;
+          skip += pageSize;
+
+          // Safety break - don't fetch more than 500 countries
+          if (allCountries.length >= 500) break;
+        }
+
+        setCountries(allCountries);
 
         // Fetch Greetings
         const greetingsResponse = await client.get<{ records: { id: number; Name: string }[] }>("/models/c_greeting", {

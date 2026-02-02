@@ -330,7 +330,7 @@ export class BusinessPartnerService extends IdempiereBaseService<BusinessPartner
   /**
    * Get student details with expanded relations (contacts, locations, bank accounts)
    * @param bpartnerId - C_BPartner_ID
-   * @returns BusinessPartner with expanded data or null if not found
+   * @returns CBPartner with expanded data or null if not found
    *
    * @example
    * const studentDetails = await service.getStudentByIdWithExpand(1000008);
@@ -339,7 +339,7 @@ export class BusinessPartnerService extends IdempiereBaseService<BusinessPartner
    * NOTE: Contacts (ad_user) are fetched separately to include both active and inactive records.
    * The default $expand only returns active records.
    */
-  async getStudentByIdWithExpand(bpartnerId: number): Promise<BusinessPartner | null> {
+  async getStudentByIdWithExpand(bpartnerId: number): Promise<CBPartner | null> {
     try {
       // Step 1: Get the business partner with locations expanded
       const response = await this.client.get<unknown>(`${this.endpoint}/${bpartnerId}`, {
@@ -360,7 +360,7 @@ export class BusinessPartnerService extends IdempiereBaseService<BusinessPartner
       // Merge the contacts into the response using the correct property name
       (response as CBPartner).ad_user = (contactsResponse.records ?? []) as ADUser[];
 
-      return response as unknown as BusinessPartner;
+      return response as CBPartner;
     } catch (error) {
       console.error(`Failed to fetch ${this.endpoint}/${bpartnerId} with expand:`, error);
       return null;
