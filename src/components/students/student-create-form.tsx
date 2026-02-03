@@ -15,12 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { getIdempiereClient } from "@/lib/api/idempiere/client";
 import type {
-  ADRoleResponse,
   BPGroupOption,
   CBPGroupResponse,
   CountryOption,
   GreetingOption,
-  RoleOption,
   StudentBPCreateResponse,
   StudentBPLocationCreateResponse,
   StudentCreateFormData,
@@ -34,7 +32,6 @@ import { STUDENT_CREATION_STEPS, TOTAL_STUDENT_CREATION_STEPS } from "@/lib/api/
 import { AccountSection } from "./form-sections/account-section";
 import { AddressSection } from "./form-sections/address-section";
 import { BasicInfoSection } from "./form-sections/basic-info-section";
-import { RoleSection } from "./form-sections/role-section";
 
 // =============================================================================
 // Validation Schemas
@@ -90,13 +87,6 @@ const step3Schema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
   userPin: z.string().optional(),
-});
-
-/**
- * Step 4: Role Schema
- */
-const step4Schema = z.object({
-  roleId: z.number().min(1, "Role is required"),
 });
 
 // =============================================================================
@@ -177,7 +167,6 @@ const studentCreateFormSchema = z.object({
   step1: step1Schema,
   step2: step2Schema,
   step3: step3Schema,
-  step4: step4Schema,
 });
 
 type StudentCreateFormValues = z.infer<typeof studentCreateFormSchema>;
@@ -188,13 +177,11 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   // Step state
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRolesLoading, setIsRolesLoading] = useState(true);
-  const [roles, setRoles] = useState<RoleOption[]>([]);
   const [isBPGroupsLoading, setIsBPGroupsLoading] = useState(true);
   const [bpGroups, setBpGroups] = useState<BPGroupOption[]>([]);
-  const [isCountriesLoading, setIsCountriesLoading] = useState(false);
+  const [_isCountriesLoading, setIsCountriesLoading] = useState(false);
   const [countries, setCountries] = useState<CountryOption[]>([]);
-  const [isGreetingsLoading, setIsGreetingsLoading] = useState(false);
+  const [_isGreetingsLoading, setIsGreetingsLoading] = useState(false);
   const [greetings, setGreetings] = useState<GreetingOption[]>([]);
   const [_creationContext, setCreationContext] = useState<StudentCreationContext>({});
 
@@ -254,9 +241,6 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
         password: "",
         userPin: "",
       },
-      step4: {
-        roleId: 1000001, // Default, will be updated by API if not valid
-      },
     },
     mode: "onChange",
   });
@@ -297,51 +281,12 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
         password: "",
         userPin: "",
       },
-      step4: {
-        roleId: 1000001,
-      },
     }),
     [],
   );
 
   // API client
   const client = getIdempiereClient();
-
-  // Fetch roles from API
-  useEffect(() => {
-    const fetchRoles = async () => {
-      setIsRolesLoading(true);
-      try {
-        const response = await client.get<ADRoleResponse>("/models/ad_role", {
-          $filter: "IsActive eq true",
-          $orderby: "Name asc",
-        });
-        // Transform to RoleOption format
-        const roleOptions: RoleOption[] = response.records.map((role) => ({
-          id: role.id,
-          name: role.Name,
-          description: role.Description,
-        }));
-        setRoles(roleOptions);
-
-        // Set default role to first role if current value is not in the list
-        const currentRoleId = form.getValues("step4.roleId");
-        const validRoleIds = roleOptions.map((r) => r.id);
-        if (!validRoleIds.includes(currentRoleId)) {
-          form.setValue("step4.roleId", roleOptions[0]?.id || 0);
-        }
-      } catch (error) {
-        console.error("Failed to fetch roles:", error);
-        toast.error("Error", {
-          description: "Failed to load available roles. Please refresh the page.",
-        });
-      } finally {
-        setIsRolesLoading(false);
-      }
-    };
-
-    fetchRoles();
-  }, [client, form]);
 
   // Fetch BP Groups from API
   useEffect(() => {
@@ -390,8 +335,6 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
         return step2Schema;
       case 3:
         return step3Schema;
-      case 4:
-        return step4Schema;
       default:
         return step1Schema;
     }
@@ -513,10 +456,13 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   );
 
   const assignRole = useCallback(
-    async (userId: number, roleId: number) => {
+    async (userId: number) => {
+      // Get Student Role ID from environment variable
+      const studentRoleId = Number.parseInt(process.env.NEXT_PUBLIC_IDEMPIERE_STUDENT_ROLE_ID || "1000003", 10);
+
       const payload = {
         AD_User_ID: { id: userId },
-        AD_Role_ID: roleId,
+        AD_Role_ID: studentRoleId,
       };
 
       const result = await client.post<StudentUserRoleCreateResponse>("/models/AD_User_Roles", payload);
@@ -528,8 +474,6 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
   // Handle Form Submit
   const onSubmit = useCallback(async () => {
     // Prevent form submission during step transitions
-    // This fixes the bug where clicking "Next" from Step 3 would submit the form
-    // instead of navigating to Step 4 (Role Assignment)
     if (isTransitioningRef.current) {
       return;
     }
@@ -542,14 +486,17 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
 
       // Step 2: Create Location
       const locationResult = await createLocation(formValues.step2, bpResult.id);
-      setCreationContext((prev) => ({ ...prev, bpLocationId: locationResult.id }));
+      setCreationContext((prev) => ({
+        ...prev,
+        bpLocationId: locationResult.id,
+      }));
 
       // Step 3: Create User
       const userResult = await createUser(formValues.step3, bpResult.id, locationResult.id);
       setCreationContext((prev) => ({ ...prev, userId: userResult.id }));
 
-      // Step 4: Assign Role
-      await assignRole(userResult.id, formValues.step4.roleId);
+      // Step 4: Assign Role (automatically using NEXT_PUBLIC_IDEMPIERE_STUDENT_ROLE_ID)
+      await assignRole(userResult.id);
 
       // Success
       toast.success("Student created successfully", {
@@ -581,12 +528,10 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
         return <AddressSection countries={countries} disabled={isLoading} />;
       case 3:
         return <AccountSection greetings={greetings} showPasswordFields={true} disabled={isLoading} />;
-      case 4:
-        return <RoleSection roles={roles} disabled={isLoading || isRolesLoading} />;
       default:
         return null;
     }
-  }, [currentStep, bpGroups, isBPGroupsLoading, countries, greetings, roles, isRolesLoading, isLoading]);
+  }, [currentStep, bpGroups, isBPGroupsLoading, countries, greetings, isLoading]);
 
   // Calculate progress percentage
   const progressPercentage = useMemo(() => {
@@ -681,11 +626,11 @@ export function StudentCreateForm({ onSuccess, onCancel }: StudentCreateFormProp
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button type="submit" disabled={isLoading || isRolesLoading || roles.length === 0}>
-                  {isLoading || isRolesLoading ? (
+                <Button type="submit" disabled={isLoading || isBPGroupsLoading || bpGroups.length === 0}>
+                  {isLoading || isBPGroupsLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {isRolesLoading ? "Loading Roles..." : "Creating Student..."}
+                      {isBPGroupsLoading ? "Loading Student Groups..." : "Creating Student..."}
                     </>
                   ) : (
                     <>

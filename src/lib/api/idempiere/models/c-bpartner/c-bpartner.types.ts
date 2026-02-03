@@ -189,7 +189,7 @@ export type BusinessPartner = CBPartner;
 // Filterable Fields Metadata (for Dynamic Data Table)
 // =============================================================================
 
-import { AlertTriangle, Briefcase, Calendar, CheckCircle, Mail, Phone, Store, User } from "lucide-react";
+import { AlertTriangle, Briefcase, Calendar, CheckCircle, Mail, Phone, Store, User, Users } from "lucide-react";
 
 /**
  * Filterable field metadata for C_BPartner
@@ -245,8 +245,39 @@ export const CBPartnerFilterableFields = {
     operators: ["contains", "eq"] as const,
     icon: Mail,
   },
+  // Phone from AD_User (expanded field) - requires client-side filtering
+  "ad_user/Phone": {
+    label: "Phone",
+    type: "string" as const,
+    operators: ["contains", "eq"] as const,
+    icon: Phone,
+    clientSide: true, // iDempiere OData doesn't support filtering on navigation properties
+  },
 
-  // Date filters (Birthday excluded - not supported by iDempiere OData API)
+  // Reference filters (list/enum fields)
+  C_BP_Group_ID: {
+    label: "Student Group",
+    type: "reference" as const,
+    operators: ["eq"] as const,
+    icon: Users,
+    reference: {
+      endpoint: "/models/c_bp_group",
+      labelField: "Name",
+      valueField: "id",
+      filter: "IsActive eq true",
+      sort: "Name asc",
+    },
+  },
+
+  // Date filters
+  // Birthday from AD_User (expanded field) - requires client-side filtering
+  "ad_user/Birthday": {
+    label: "Birthday",
+    type: "date" as const,
+    operators: ["eq", "gt", "lt", "ge", "le"] as const,
+    icon: Calendar,
+    clientSide: true, // iDempiere OData doesn't support filtering on navigation properties
+  },
   Created: {
     label: "Created Date",
     type: "date" as const,

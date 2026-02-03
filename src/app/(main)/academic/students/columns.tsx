@@ -3,9 +3,9 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { Cake, Phone, Users } from "lucide-react";
 
 import {
-  type ActionItem,
   type ActionsColumnConfig,
   createEntityColumns,
   createTextColumn,
@@ -17,8 +17,16 @@ import { buildMasterDataActions } from "@/lib/actions";
 import type { Student } from "@/lib/types/students";
 
 /**
+ * Format date for display
+ */
+function formatDate(dateString?: string): string {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString();
+}
+
+/**
  * Column definitions for Students table
- * Now uses reusable action builder
+ * Aligned with form fields from create/edit student pages
  */
 export function getStudentColumns(
   onSortChange?: (columnId: string, desc: boolean) => void,
@@ -50,7 +58,7 @@ export function getStudentColumns(
     },
   };
 
-  // Actions column configuration - NOW USING BUILDER
+  // Actions column configuration
   const actionsColumn: ActionsColumnConfig<Student> = {
     items: (student) => {
       // Merge config dengan page-specific handlers
@@ -66,21 +74,72 @@ export function getStudentColumns(
     copyId: studentActionConfig.copyId,
   };
 
-  // Custom column for Student ID
+  // Custom column for Student ID (Step 1: Basic Info)
   const studentIdColumn = createTextColumn<Student>({
     accessorKey: "value",
-    header: "ID",
+    header: "Student ID",
     cellClassName: "font-mono text-muted-foreground text-sm",
     onSortChange,
     onHideClick,
   });
+
+  // Custom column for Student Group (Step 1: Basic Info)
+  const studentGroupColumn: ColumnDef<Student> = {
+    accessorKey: "bpGroupName",
+    header: "Student Group",
+    cell: ({ row }) => {
+      const groupName = row.original.bpGroupName;
+      return (
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm">{groupName || "-"}</span>
+        </div>
+      );
+    },
+  };
+
+  // Custom column for Phone (Step 3: Account)
+  const phoneColumn: ColumnDef<Student> = {
+    accessorKey: "phone",
+    header: "Phone",
+    cell: ({ row }) => {
+      const phone = row.original.phone;
+      return (
+        <div className="flex items-center gap-2">
+          <Phone className="h-4 w-4 text-muted-foreground" />
+          {phone ? (
+            <a href={`tel:${phone}`} className="text-primary text-sm hover:underline">
+              {phone}
+            </a>
+          ) : (
+            <span className="text-muted-foreground text-sm">-</span>
+          )}
+        </div>
+      );
+    },
+  };
+
+  // Custom column for Birthday (Step 3: Account)
+  const birthdayColumn: ColumnDef<Student> = {
+    accessorKey: "birthday",
+    header: "Birthday",
+    cell: ({ row }) => {
+      const birthday = row.original.birthday;
+      return (
+        <div className="flex items-center gap-2">
+          <Cake className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm">{formatDate(birthday)}</span>
+        </div>
+      );
+    },
+  };
 
   return createEntityColumns<Student>({
     enableSelection: true,
     profileColumn,
     statusColumn,
     actionsColumn,
-    customColumns: [studentIdColumn],
+    customColumns: [studentIdColumn, studentGroupColumn, phoneColumn, birthdayColumn],
     onSortChange,
     onHideClick,
   });

@@ -53,20 +53,12 @@ const step3Schema = z.object({
 });
 
 /**
- * Step 4: Role Schema
- */
-const step4Schema = z.object({
-  roleId: z.number().optional(),
-});
-
-/**
  * Complete student update schema
  */
 export const studentUpdateSchema = z.object({
   step1: step1Schema,
   step2: step2Schema,
   step3: step3Schema,
-  step4: step4Schema,
 });
 
 /**
@@ -80,4 +72,3 @@ export type StudentUpdateFormValues = z.infer<typeof studentUpdateSchema>;
 export const step1UpdateSchema = step1Schema;
 export const step2UpdateSchema = step2Schema;
 export const step3UpdateSchema = step3Schema;
-export const step4UpdateSchema = step4Schema;

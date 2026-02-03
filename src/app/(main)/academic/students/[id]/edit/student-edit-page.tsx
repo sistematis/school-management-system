@@ -11,20 +11,18 @@ import { AlertCircle, ChevronLeft, Loader2, Save } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { AccountSection, AddressSection, BasicInfoSection, RoleSection } from "@/components/students/form-sections";
+import { AccountSection, AddressSection, BasicInfoSection } from "@/components/students/form-sections";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getIdempiereClient } from "@/lib/api/idempiere/client";
 import type {
-  ADRoleResponse,
   BPGroupOption,
   CBPartner,
   CBPGroupResponse,
   CountryOption,
   GreetingOption,
-  RoleOption,
 } from "@/lib/api/idempiere/models";
 import { getBusinessPartnerService } from "@/lib/api/idempiere/services/business-partner.service";
 import { type StudentUpdateFormValues, studentUpdateSchema } from "@/lib/schemas/student-update.schema";
@@ -43,7 +41,7 @@ interface StudentEditPageProps {
 // =============================================================================
 
 /**
- * Transform API response to form values for all 4 steps
+ * Transform API response to form values for all 3 steps
  */
 function transformApiToFormValues(businessPartner: CBPartner): StudentUpdateFormValues {
   // Step 1: Basic Information
@@ -87,17 +85,10 @@ function transformApiToFormValues(businessPartner: CBPartner): StudentUpdateForm
     username: firstUser?.Value || "",
   };
 
-  // Step 4: Role - We'll need to fetch user roles separately
-  // For now, set default
-  const step4 = {
-    roleId: 0,
-  };
-
   return {
     step1,
     step2,
     step3,
-    step4,
   };
 }
 
@@ -121,7 +112,6 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
   const [bpGroups, setBpGroups] = useState<BPGroupOption[]>([]);
   const [countries, setCountries] = useState<CountryOption[]>([]);
   const [greetings, setGreetings] = useState<GreetingOption[]>([]);
-  const [roles, setRoles] = useState<RoleOption[]>([]);
 
   // Current tab state
   const [currentTab, setCurrentTab] = useState("basic");
@@ -157,9 +147,6 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
         birthday: "",
         comments: "",
         username: "",
-      },
-      step4: {
-        roleId: 0,
       },
     },
     mode: "onChange",
@@ -234,19 +221,6 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
             name: g.Name,
           })),
         );
-
-        // Fetch Roles
-        const rolesResponse = await client.get<ADRoleResponse>("/models/ad_role", {
-          $filter: "IsActive eq true",
-          $orderby: "Name asc",
-        });
-        setRoles(
-          rolesResponse.records.map((r) => ({
-            id: r.id,
-            name: r.Name,
-            description: r.Description,
-          })),
-        );
       } catch (error) {
         console.error("Failed to fetch reference data:", error);
         toast.error("Error", {
@@ -299,26 +273,6 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
         // Transform and set form values
         const formValues = transformApiToFormValues(data);
         form.reset(formValues);
-
-        // Fetch user role if user exists
-        if (data.ad_user && data.ad_user.length > 0) {
-          const userId = data.ad_user[0].id;
-          try {
-            const userRolesResponse = await client.get<{ records: { AD_Role_ID: { id: number } }[] }>(
-              "/models/ad_user_roles",
-              {
-                $filter: `ad_user_ID eq ${userId} AND IsActive eq true`,
-              },
-            );
-
-            if (userRolesResponse.records && userRolesResponse.records.length > 0) {
-              const roleId = userRolesResponse.records[0].AD_Role_ID.id;
-              form.setValue("step4.roleId", roleId);
-            }
-          } catch (roleError) {
-            console.error("Failed to fetch user role:", roleError);
-          }
-        }
       } catch (error) {
         console.error("[Edit Page] Failed to fetch student:", error);
         // Only update state if this is still the latest request
@@ -342,7 +296,7 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
     return () => {
       // Request ID tracking handles stale responses automatically
     };
-  }, [studentId, businessPartnerService, client, form]);
+  }, [studentId, businessPartnerService, form]);
 
   // Handle form submit
   const onSubmit = useCallback(
@@ -397,35 +351,6 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
           });
         }
 
-        // Step 4: Update ad_user_Roles (Role Assignment)
-        if (firstUser && values.step4.roleId && values.step4.roleId > 0) {
-          // Check if user has existing role
-          const userRolesResponse = await client.get<{ records: { id: number; AD_Role_ID: { id: number } }[] }>(
-            "/models/ad_user_roles",
-            {
-              $filter: `ad_user_ID eq ${firstUser.id} AND IsActive eq true`,
-            },
-          );
-
-          const existingRole = userRolesResponse.records?.[0];
-
-          if (existingRole) {
-            // Update existing role if changed
-            if (existingRole.AD_Role_ID.id !== values.step4.roleId) {
-              await client.put(`/models/ad_user_Roles/${existingRole.id}`, {
-                ad_user_ID: { id: firstUser.id },
-                AD_Role_ID: values.step4.roleId,
-              });
-            }
-          } else {
-            // Create new role assignment
-            await client.post("/models/ad_user_Roles", {
-              ad_user_ID: { id: firstUser.id },
-              AD_Role_ID: values.step4.roleId,
-            });
-          }
-        }
-
         // Success - stay on page
         toast.success("Student updated successfully", {
           description: `${values.step1.name}'s information has been saved.`,
@@ -454,7 +379,6 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
       { id: "basic", label: "Basic Information", value: "step1" },
       { id: "address", label: "Address & Location", value: "step2" },
       { id: "account", label: "Account Setup", value: "step3" },
-      { id: "role", label: "Role Assignment", value: "step4" },
     ],
     [],
   );
@@ -517,7 +441,7 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs value={currentTab} onValueChange={setCurrentTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               {tabs.map((tab) => (
                 <TabsTrigger key={tab.id} value={tab.id}>
                   {tab.label}
@@ -560,19 +484,6 @@ export function StudentEditPage({ studentId }: StudentEditPageProps) {
                 </CardHeader>
                 <CardContent>
                   <AccountSection greetings={greetings} showPasswordFields={false} disabled={isSaving} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Tab 4: Role Assignment */}
-            <TabsContent value="role" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Role Assignment</CardTitle>
-                  <CardDescription>Update the student's system role and permissions.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RoleSection roles={roles} disabled={isSaving} />
                 </CardContent>
               </Card>
             </TabsContent>

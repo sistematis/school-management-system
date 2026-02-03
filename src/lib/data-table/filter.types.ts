@@ -24,6 +24,17 @@ export type ODataOperator =
 export type FilterFieldType = "boolean" | "string" | "enum" | "number" | "date" | "reference";
 
 /**
+ * Reference field configuration for dynamic option fetching
+ */
+export interface ReferenceFieldConfig {
+  endpoint: string; // API endpoint to fetch options from
+  labelField: string; // Field name to use as label
+  valueField: string; // Field name to use as value
+  filter?: string; // Optional OData filter for fetching options
+  sort?: string; // Optional OData sort for fetching options
+}
+
+/**
  * Metadata for a filterable field
  */
 export interface FilterFieldMetadata<
@@ -37,6 +48,8 @@ export interface FilterFieldMetadata<
   searchable?: boolean; // For global search input
   options?: readonly { label: string; value: string }[];
   modelName?: string; // For reference fields
+  reference?: ReferenceFieldConfig; // For dynamic reference option fetching
+  clientSide?: boolean; // Filter should be applied client-side (for navigation properties)
 }
 
 /**

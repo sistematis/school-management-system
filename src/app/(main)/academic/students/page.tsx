@@ -12,7 +12,6 @@ import { Plus, Users } from "lucide-react";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableEmpty } from "@/components/data-table/data-table-empty";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableStats } from "@/components/data-table/data-table-stats";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { StudentDetailDrawer } from "@/components/students";
@@ -48,6 +47,8 @@ export default function StudentsPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  // Pending filters for real-time data refresh while filter popover is open
+  const [pendingFilters, setPendingFilters] = useState<ActiveFilter[] | undefined>(undefined);
 
   // Field name mapping: camelCase (frontend) -> PascalCase (API)
   const fieldNameMap: Record<string, string> = {
@@ -58,22 +59,25 @@ export default function StudentsPage() {
   };
 
   // Build OData query params from URL filters
-  const { queryParams, activeFilters, searchQuery, setActiveFilters, setSearchQuery, resetAll } = useODataQuery({
-    schema: studentFilterSchema,
-    searchableField: "Name",
-    pageSize: pageSize,
-    currentPage,
-    sorting,
-    fieldNameMap,
-  });
+  const { queryParams, activeFilters, searchQuery, clientSideFilters, setActiveFilters, setSearchQuery, resetAll } =
+    useODataQuery({
+      schema: studentFilterSchema,
+      searchableField: "Name",
+      pageSize: pageSize,
+      currentPage,
+      sorting,
+      fieldNameMap,
+      pendingFilters,
+    });
 
-  // Fetch students with filters
+  // Fetch students with filters (server-side + client-side for navigation properties)
   const {
     data: studentsData,
     isLoading: isLoadingStudents,
     error: studentsError,
   } = useStudents({
     queryParams,
+    clientSideFilters,
   });
 
   // Fetch stats (reflects filtered data)
@@ -268,9 +272,9 @@ export default function StudentsPage() {
         {/* Data Table Skeleton - matches actual UI structure with border container */}
         <div className="flex flex-col gap-0 rounded-md border bg-card">
           {/* Toolbar skeleton */}
-          <div className="border-b p-4 flex items-center justify-between">
+          <div className="flex items-center justify-between border-b p-4">
             <div className="flex flex-1 items-center space-x-2">
-              <div className="h-8 w-[150px] lg:w-[250px] animate-pulse rounded-md bg-muted" />
+              <div className="h-8 w-[150px] animate-pulse rounded-md bg-muted lg:w-[250px]" />
               <div className="h-8 w-[120px] animate-pulse rounded-md bg-muted" />
             </div>
             <div className="h-8 w-[100px] animate-pulse rounded-md bg-muted" />
@@ -301,7 +305,7 @@ export default function StudentsPage() {
           </div>
 
           {/* Pagination skeleton */}
-          <div className="border-t p-4 flex items-center justify-between">
+          <div className="flex items-center justify-between border-t p-4">
             <div className="h-9 w-[150px] animate-pulse rounded-md bg-muted" />
             <div className="flex gap-2">
               <div className="h-9 w-[80px] animate-pulse rounded-md bg-muted" />
@@ -364,6 +368,7 @@ export default function StudentsPage() {
             onSearchChange={setSearchQuery}
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={handleColumnVisibilityChange}
+            onPendingFiltersChange={setPendingFilters}
           />
         </div>
 

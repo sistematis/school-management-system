@@ -13,7 +13,7 @@ import {
   useTransition,
 } from "react";
 
-import { Calendar, Check, PlusCircle, X } from "lucide-react";
+import { Calendar, Check, Loader2, PlusCircle, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,15 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import type { ActiveFilter, FilterFieldMetadata, FilterSchema, ODataOperator } from "@/lib/data-table/filter.types";
+import { useReferenceOptions } from "@/lib/data-table/use-reference-options";
 import { cn } from "@/lib/utils";
 
 export interface DataTableFacetedFilterProps {
   schema: FilterSchema;
   activeFilters: ActiveFilter[];
   onFiltersChange: (filters: ActiveFilter[]) => void;
+  /** Callback for real-time data refresh while filter popover is open */
+  onPendingFiltersChange?: (filters: ActiveFilter[]) => void;
 }
 
 export interface DataTableFacetedFilterRef {
@@ -36,7 +39,10 @@ export interface DataTableFacetedFilterRef {
 }
 
 const DataTableFacetedFilterComponent = forwardRef<DataTableFacetedFilterRef, DataTableFacetedFilterProps>(
-  function DataTableFacetedFilter({ schema, activeFilters, onFiltersChange }: DataTableFacetedFilterProps, ref) {
+  function DataTableFacetedFilter(
+    { schema, activeFilters, onFiltersChange, onPendingFiltersChange }: DataTableFacetedFilterProps,
+    ref,
+  ) {
     const [open, setOpen] = useState(false);
     // Track pending filters for real-time data refresh - managed entirely within this component
     const [pendingFilters, setPendingFilters] = useState<ActiveFilter[]>([]);
@@ -162,6 +168,69 @@ const DataTableFacetedFilterComponent = forwardRef<DataTableFacetedFilterRef, Da
       }
     }, [open]);
 
+    // Notify parent of pending filters changes for real-time data refresh
+    useEffect(() => {
+      if (open && onPendingFiltersChange) {
+        onPendingFiltersChange(pendingFilters);
+      }
+    }, [pendingFilters, open, onPendingFiltersChange]);
+
+    // Component for reference fields with dynamic options
+    const ReferenceFieldFilter = ({ name, metadata }: { name: string; metadata: FilterFieldMetadata<"reference"> }) => {
+      const { options, isLoading, error } = useReferenceOptions(metadata.reference);
+
+      if (isLoading) {
+        return (
+          <div key={name} className="px-2 py-1.5">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span>Loading {metadata.label}...</span>
+            </div>
+          </div>
+        );
+      }
+
+      if (error || options.length === 0) {
+        return (
+          <div key={name} className="px-2 py-1.5">
+            <div className="text-muted-foreground text-sm">
+              {error ? `Error: ${error}` : `No ${metadata.label} options available`}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <>
+          {options.map((option) => (
+            <button
+              key={`${name}-${option.value}`}
+              type="button"
+              className={cn(
+                "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent",
+                isFilterActive(name, option.value) && "bg-accent",
+              )}
+              onClickCapture={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                toggleFilter(name, option.value, "eq");
+              }}
+            >
+              <div
+                className={cn(
+                  "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                  isFilterActive(name, option.value) ? "bg-primary text-primary-foreground" : "opacity-50",
+                )}
+              >
+                {isFilterActive(name, option.value) && <Check className="h-3 w-3" />}
+              </div>
+              <span className="flex-1 text-left">{option.label}</span>
+            </button>
+          ))}
+        </>
+      );
+    };
+
     return (
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
@@ -284,6 +353,9 @@ const DataTableFacetedFilterComponent = forwardRef<DataTableFacetedFilterRef, Da
                               align="center"
                               sideOffset={4}
                               onChange={(range) => {
+                                // Mark that the popover should stay open for real-time refresh
+                                shouldBeOpenRef.current = true;
+
                                 const otherFilters = pendingFilters.filter((f) => f.field !== name);
                                 const newFilters: typeof pendingFilters = [];
 
@@ -339,8 +411,8 @@ const DataTableFacetedFilterComponent = forwardRef<DataTableFacetedFilterRef, Da
                         );
                       }
 
-                      // For enum/reference fields, show options
-                      if (metadata.options) {
+                      // For enum fields with static options, show options
+                      if (metadata.type === "enum" && metadata.options) {
                         return metadata.options.map((option: { label: string; value: string }) => (
                           <button
                             key={`${name}-${option.value}`}
@@ -368,6 +440,60 @@ const DataTableFacetedFilterComponent = forwardRef<DataTableFacetedFilterRef, Da
                             <span className="flex-1 text-left">{option.label}</span>
                           </button>
                         ));
+                      }
+
+                      // For reference fields with dynamic options
+                      if (metadata.type === "reference") {
+                        return (
+                          <ReferenceFieldFilter
+                            key={name}
+                            name={name}
+                            metadata={metadata as FilterFieldMetadata<"reference">}
+                          />
+                        );
+                      }
+
+                      // For string fields, show text input with contains operator
+                      if (metadata.type === "string") {
+                        const currentValue = (pendingFilters.find((f) => f.field === name)?.value as string) || "";
+                        return (
+                          <div key={name} className="px-2 py-1.5">
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="font-medium text-sm">{metadata.label}</span>
+                              {currentValue && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    shouldBeOpenRef.current = true;
+                                    const newFilters = pendingFilters.filter((f) => f.field !== name);
+                                    startTransition(() => setPendingFilters(newFilters));
+                                  }}
+                                  className="text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              placeholder={`Search ${metadata.label}...`}
+                              value={currentValue}
+                              onChange={(e) => {
+                                shouldBeOpenRef.current = true;
+                                const value = e.target.value;
+                                if (!value) {
+                                  const newFilters = pendingFilters.filter((f) => f.field !== name);
+                                  startTransition(() => setPendingFilters(newFilters));
+                                } else {
+                                  const newFilters = pendingFilters.filter((f) => f.field !== name);
+                                  newFilters.push({ field: name, operator: "contains" as const, value });
+                                  startTransition(() => setPendingFilters(newFilters));
+                                }
+                              }}
+                              className="flex h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-muted placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            />
+                          </div>
+                        );
                       }
 
                       return null;

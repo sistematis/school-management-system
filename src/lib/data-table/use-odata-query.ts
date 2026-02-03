@@ -6,7 +6,7 @@ import { useMemo } from "react";
 
 import type { SortingState } from "@tanstack/react-table";
 
-import { buildODataFilter } from "./build-odata-filter";
+import { buildODataFilter, getClientSideFilters } from "./build-odata-filter";
 import type { FilterSchema } from "./filter.types";
 import { useTableFilters } from "./use-table-filters";
 
@@ -103,6 +103,7 @@ export function useODataQuery({
     queryParams,
     activeFilters,
     searchQuery,
+    clientSideFilters: getClientSideFilters(effectiveFilters, schema.metadata),
     setActiveFilters,
     setSearchQuery,
     resetAll,

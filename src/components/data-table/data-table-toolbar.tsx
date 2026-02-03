@@ -25,6 +25,10 @@ export interface DataTableToolbarProps<TData> {
   onSearchChange: (value: string) => void;
   columnVisibility?: VisibilityState;
   onColumnVisibilityChange?: (columnId: string, value: boolean) => void;
+  /** Pending filters from filter component for real-time data refresh */
+  pendingFilters?: ActiveFilter[];
+  /** Callback to receive pending filters from filter component */
+  onPendingFiltersChange?: (filters: ActiveFilter[]) => void;
 }
 
 export function DataTableToolbar<TData>({
@@ -38,6 +42,8 @@ export function DataTableToolbar<TData>({
   onSearchChange,
   columnVisibility,
   onColumnVisibilityChange,
+  _pendingFilters,
+  onPendingFiltersChange,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = activeFilters.length > 0;
   const [_isPending, startTransition] = useTransition();
@@ -130,6 +136,7 @@ export function DataTableToolbar<TData>({
             schema={filterSchema}
             activeFilters={activeFilters}
             onFiltersChange={onFiltersChange}
+            onPendingFiltersChange={onPendingFiltersChange}
           />
         )}
         {isFiltered && (

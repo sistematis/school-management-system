@@ -2,7 +2,20 @@
 
 "use client";
 
-import { AtSign, Building2, Cake, Calendar, Mail, MapPin, Phone, User, Users } from "lucide-react";
+import {
+  AtSign,
+  Building2,
+  Cake,
+  Calendar,
+  FileText,
+  Globe,
+  IdCard,
+  Mail,
+  MapPin,
+  Phone,
+  User,
+  Users,
+} from "lucide-react";
 
 import {
   type DetailSectionConfig,
@@ -97,19 +110,13 @@ function LocationCard({ location }: { location: CBPartnerLocation }) {
   const loc = location.C_Location_ID;
 
   const fullAddress = loc.identifier || "";
-  const fallbackAddress = [
-    loc.Address1,
-    loc.Address2,
-    loc.Address3,
-    loc.Address4,
-    loc.City,
-    loc.Postal,
-    loc.C_Country_ID?.identifier,
-  ]
+  const fallbackAddress = [loc.Address1, loc.Address2, loc.Address3, loc.Address4, loc.City, loc.Postal]
     .filter(Boolean)
     .join(", ");
+  const countryName = loc.C_Country_ID?.identifier;
 
-  const displayAddress = fullAddress || fallbackAddress || "No address information";
+  const displayAddress =
+    fullAddress || (fallbackAddress || "No address information") + (countryName ? `, ${countryName}` : "");
 
   return (
     <Card className="border-muted/50">
@@ -122,10 +129,13 @@ function LocationCard({ location }: { location: CBPartnerLocation }) {
       <CardContent className="space-y-2 p-4 pt-2">
         <p className="whitespace-pre-line text-sm">{displayAddress}</p>
 
-        {loc.C_Country_ID && !fullAddress && (
-          <Badge variant="secondary" className="text-xs">
-            {loc.C_Country_ID.identifier}
-          </Badge>
+        {countryName && !fullAddress && (
+          <div className="flex items-center gap-1.5">
+            <Globe className="size-3 text-muted-foreground" />
+            <Badge variant="secondary" className="text-xs">
+              {countryName}
+            </Badge>
+          </div>
         )}
 
         <div className="flex flex-wrap gap-1.5 pt-2">
@@ -176,6 +186,9 @@ export function StudentDetailDrawer({
   const contacts = student?.ad_user ?? [];
   const locations = student?.c_bpartner_location ?? [];
 
+  // Get first user contact (primary contact)
+  const primaryContact = contacts?.[0];
+
   // Configure header
   const header: EntityHeaderConfig<BusinessPartner> = {
     title: student?.Name ?? "Student Details",
@@ -190,61 +203,28 @@ export function StudentDetailDrawer({
             show: true,
           },
           {
-            label: "Student",
+            label: student.C_BP_Group_ID?.identifier || "Student",
             variant: "outline",
             color: "border-blue-200 text-blue-700",
             show: student.IsCustomer,
-          },
-          {
-            label: "Employee",
-            variant: "outline",
-            color: "border-purple-200 text-purple-700",
-            show: student.IsEmployee,
-          },
-          {
-            label: "Vendor",
-            variant: "outline",
-            color: "border-orange-200 text-orange-700",
-            show: student.IsVendor,
           },
         ]
       : [],
   };
 
-  // Configure sections
+  // Configure sections - Aligned with form structure
   const sections: DetailSectionConfig[] = [
+    // Step 1: Basic Information
     {
-      value: "item-business-partner",
-      title: "Business Partner",
-      icon: Building2,
+      value: "item-basic-info",
+      title: "Basic Information",
+      icon: User,
       renderContent: () => {
         const infoRows: InfoRowConfig[] = [
           { icon: User, label: "Full Name", value: student?.Name },
           ...(student?.Name2 ? [{ icon: User, label: "Name 2", value: student.Name2 }] : []),
-          { icon: AtSign, label: "Student ID", value: student?.Value },
-          ...(student?.EMail
-            ? [
-                {
-                  icon: Mail,
-                  label: "Email",
-                  value: (
-                    <a href={`mailto:${student.EMail}`} className="text-primary hover:underline">
-                      {student.EMail}
-                    </a>
-                  ),
-                },
-              ]
-            : []),
-          ...(student?.Birthday
-            ? [
-                {
-                  icon: Cake,
-                  label: "Birthday",
-                  value: new Date(student.Birthday).toLocaleDateString(),
-                },
-              ]
-            : []),
-          { icon: Users, label: "BP Group", value: student?.C_BP_Group_ID?.identifier },
+          { icon: IdCard, label: "Student ID", value: student?.Value },
+          { icon: Users, label: "Student Group", value: student?.C_BP_Group_ID?.identifier },
           {
             icon: Calendar,
             label: "Created",
@@ -272,38 +252,115 @@ export function StudentDetailDrawer({
         );
       },
     },
-    {
-      value: "item-contacts",
-      title: "Contacts",
-      icon: Phone,
-      count: contacts.length,
-      renderContent: () => {
-        if (contacts.length === 0) {
-          return <div className="flex items-center gap-2 py-2 text-muted-foreground text-sm">No contacts found</div>;
-        }
-        return (
-          <div className="space-y-3">
-            {contacts.map((contact) => (
-              <ContactCard key={contact.id} contact={contact} />
-            ))}
-          </div>
-        );
-      },
-    },
+    // Step 2: Address & Location
     {
       value: "item-locations",
-      title: "Locations",
+      title: "Address & Location",
       icon: MapPin,
       count: locations.length,
       renderContent: () => {
         if (locations.length === 0) {
-          return <div className="flex items-center gap-2 py-2 text-muted-foreground text-sm">No locations found</div>;
+          return <div className="flex items-center gap-2 py-2 text-muted-foreground text-sm">No address found</div>;
         }
         return (
           <div className="space-y-3">
             {locations.map((location) => (
               <LocationCard key={location.id} location={location} />
             ))}
+          </div>
+        );
+      },
+    },
+    // Step 3: Account Setup
+    {
+      value: "item-account",
+      title: "Account Setup",
+      icon: AtSign,
+      renderContent: () => {
+        if (!primaryContact && !student?.EMail) {
+          return (
+            <div className="flex items-center gap-2 py-2 text-muted-foreground text-sm">
+              No account information found
+            </div>
+          );
+        }
+
+        // Show info from primary AD_User contact or from BP
+        const displayName = primaryContact?.Name || student?.Name;
+        const username = primaryContact?.Value;
+        const email = primaryContact?.EMail || student?.EMail;
+        const phone = primaryContact?.Phone;
+        const phone2 = primaryContact?.Phone2;
+        const birthday = primaryContact?.Birthday || student?.Birthday;
+        const greeting = primaryContact?.C_Greeting_ID?.identifier;
+        const title = primaryContact?.Title;
+        const comments = primaryContact?.Comments;
+
+        const infoRows: InfoRowConfig[] = [
+          ...(username ? [{ icon: AtSign, label: "Username", value: `@${username}` }] : []),
+          ...(email
+            ? [
+                {
+                  icon: Mail,
+                  label: "Email",
+                  value: (
+                    <a href={`mailto:${email}`} className="text-primary hover:underline">
+                      {email}
+                    </a>
+                  ),
+                },
+              ]
+            : []),
+          ...(greeting ? [{ icon: Users, label: "Greeting", value: greeting }] : []),
+          ...(title ? [{ icon: User, label: "Title", value: title }] : []),
+          ...(phone
+            ? [
+                {
+                  icon: Phone,
+                  label: "Primary Phone",
+                  value: (
+                    <a href={`tel:${phone}`} className="text-primary hover:underline">
+                      {phone}
+                    </a>
+                  ),
+                },
+              ]
+            : []),
+          ...(phone2
+            ? [
+                {
+                  icon: Phone,
+                  label: "Secondary Phone",
+                  value: (
+                    <a href={`tel:${phone2}`} className="text-primary hover:underline">
+                      {phone2}
+                    </a>
+                  ),
+                },
+              ]
+            : []),
+          ...(birthday
+            ? [
+                {
+                  icon: Cake,
+                  label: "Birthday",
+                  value: new Date(birthday).toLocaleDateString(),
+                },
+              ]
+            : []),
+        ];
+
+        return (
+          <div className="space-y-1">
+            {infoRows.map((row) => (
+              <InfoRow key={row.label} {...row} />
+            ))}
+            {comments && (
+              <div className="mt-2 border-t pt-2">
+                <p className="mb-1 text-muted-foreground text-xs">Comments</p>
+                <p className="text-sm">{comments}</p>
+              </div>
+            )}
           </div>
         );
       },

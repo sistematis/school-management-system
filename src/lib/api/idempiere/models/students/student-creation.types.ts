@@ -440,6 +440,7 @@ export interface StudentUserRoleCreateResponse {
 
 /**
  * Complete student creation form data across all steps
+ * Note: step4 (roleId) is not part of the form - it uses NEXT_PUBLIC_IDEMPIERE_STUDENT_ROLE_ID
  */
 export interface StudentCreateFormData {
   // Step 1: Business Partner
@@ -474,10 +475,6 @@ export interface StudentCreateFormData {
     username?: string;
     password?: string;
     userPin?: string;
-  };
-  // Step 4: Role
-  step4: {
-    roleId: number;
   };
 }
 
@@ -529,6 +526,7 @@ export interface StudentCreationStep {
 
 /**
  * Available steps for student creation
+ * Note: Role Assignment (Step 4) is done automatically using NEXT_PUBLIC_IDEMPIERE_STUDENT_ROLE_ID
  */
 export const STUDENT_CREATION_STEPS: StudentCreationStep[] = [
   {
@@ -549,15 +547,9 @@ export const STUDENT_CREATION_STEPS: StudentCreationStep[] = [
     description: "Create user account and credentials",
     icon: "lock",
   },
-  {
-    id: 4,
-    title: "Role Assignment",
-    description: "Assign system role to the student",
-    icon: "shield",
-  },
 ] as const;
 
 /**
  * Total number of steps in student creation flow
  */
-export const TOTAL_STUDENT_CREATION_STEPS = 4;
+export const TOTAL_STUDENT_CREATION_STEPS = 3;
